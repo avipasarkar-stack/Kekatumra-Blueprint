@@ -9,6 +9,7 @@
     "start": "node --disable-warning=ExperimentalWarning server.js",
     "test": "node --disable-warning=ExperimentalWarning --test \"test/*.test.js\"",
     "create-admin": "node --disable-warning=ExperimentalWarning scripts/create-admin.js",
-    "backup": "node --disable-warning=ExperimentalWarning scripts/backup.js"
+    "backup": "node --disable-warning=ExperimentalWarning scripts/backup.js",
+    "sync-frontend": "node scripts/sync-frontend.js"
   }
 }

@@ -9,15 +9,24 @@ API + static file server for the **माझं गाव केकतउमर�
 
 ## Quick start
 
+From the project directory, synchronize the maintained root frontend into the backend's
+public-only directory, then run the server from `backend/`:
+
 ```bash
-cd kekatumra-backend
-cp .env.example .env            # optional; defaults work for local testing
-mkdir -p public && cp /path/to/index.html public/
+cd backend
+npm run sync-frontend
 npm run create-admin -- yourname   # asks for a password (min 10 characters)
-COOKIE_SECURE=false npm start      # COOKIE_SECURE=false only for plain-http local testing
+npm start
 ```
 
-Open http://localhost:3000. Run the tests with `npm test` (25 tests).
+Open http://localhost:3000. Run the tests with `npm test`. No `.env` file or npm
+dependencies are required for local testing; Node.js 22.13 or newer is required.
+`npm run sync-frontend` copies only the root `index.html` and `app.js` files into
+`backend/public`. Run it again after changing either frontend source file.
+
+The server's default static directory is `backend/public` when started from this
+directory. Do not set `PUBLIC_DIR` to the project root: the public directory is
+deliberately isolated from backend source, `.env`, and SQLite data.
 
 ## Roles
 
@@ -82,18 +91,23 @@ The server re-checks the form's rules: required fields, gender, 10-digit mobiles
 - `409 needs_confirmation` with `warnings: [{code, message, existing}]`. Show the message; if the user confirms, send the same request again with `"acknowledge": ["same_house_head", ...]` (the codes from the warnings).
 - `409 conflict` on `PUT` - someone else saved the record after you opened it (send `baseSavedAt` = the `savedAt` you loaded).
 
-## Connecting the current frontend
+## Frontend data and access
 
 | Today (`localStorage` key) | Becomes |
 |---|---|
-| `keketUmraFamilyRecordsStage25V1` | `/api/families` (needs a login screen for surveyors) |
-| `keketUmraFamilySurveyDraftStage25V1` | Leave in `localStorage` (it is only an unsaved draft) |
+| `keketUmraFamilyRecordsStage25V1` | `/api/families` (surveyor/admin session required) |
+| `keketUmraFamilySurveyDraftStage25V1` | Remains in `localStorage` as an unsaved draft only |
 | `keketUmraVillageSuggestionsStage25V1` | `/api/suggestions` |
 | `keketUmraSkilledWorkersStage25V1` | `/api/workers` |
-| `keketUmraWorkerRatingsStage25V1` | `/api/ratings` (averages come with `/api/workers`) |
-| Admin approval buttons (`data-stage23-*`) | `/api/admin/pending` and `/api/admin/queue/...` (needs an admin login screen) |
+| `keketUmraWorkerRatingsStage25V1` | `/api/ratings` (averages are returned with `/api/workers`) |
+| Admin approval queue | `/api/admin/pending` and `/api/admin/queue/...` (admin session required) |
 
-The frontend changes are mostly: replace `read()/write()` with `fetch()`, make the render functions `async`, and add a small login form.
+New family submissions are stored only in SQLite. Pre-existing family-record keys in
+browser `localStorage` are not used for active records or deleted by the integrated frontend.
+An admin-only "जुन्या ब्राउझर नोंदींचा JSON बॅकअप" action can export the old key without
+changing it; use the admin-only additive import to migrate that file.
+Family deletion, JSON export/import, and backup checks are admin-only. Surveyors may
+search, create, edit, print, and export CSV for family records.
 
 ## Security notes
 

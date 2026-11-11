@@ -278,7 +278,7 @@
       <div class="page-title"><span class="eyebrow">स्थानिक कौशल्यांना संधी</span><h1>कौशल्य सेतू</h1><p>कौशल्य शोधा, मंजूर सेवा प्रदाते पाहा, नोंदणी करा आणि सेवेनंतर अभिप्राय द्या.</p></div>
       <div class="search-panel"><label for="skillSearch">सेवा किंवा कौशल्य शोधा</label><div class="search-row"><input id="skillSearch" type="search" placeholder="उदा. इलेक्ट्रिशियन, प्लंबर, शिवणकाम"><select id="skillCategory"><option value="">सर्व सेवा</option><option>इलेक्ट्रिशियन</option><option>प्लंबर</option><option>सुतारकाम</option><option>कॉम्प्युटर सेवा</option><option>वाहन / यंत्र दुरुस्ती</option><option>शिवणकाम</option><option>रंगकाम</option><option>शेती / कृषी सेवा</option><option>गवंडी / बांधकाम</option><option>केटरिंग / स्वयंपाक</option></select><button id="skillSearchBtn" class="button button-primary" type="button">शोधा</button></div><p class="small-muted">फक्त संपर्क-संमती दिलेली आणि मंजूर प्रोफाइल येथे दिसतील.</p></div>
       <div class="hero-actions" style="margin:0 0 18px"><button class="button button-primary" data-goto="workers">कौशल्यधारक नोंदणी करा</button><button class="button button-light" data-goto="ratings">रेटिंग व अभिप्राय द्या</button><button class="button button-light" data-goto="admin">प्रलंबित नोंदी तपासा</button></div>
-      <div id="skillResults" class="info-grid"></div><div class="callout">नोंदणी, संपर्क संमती, प्रशासकीय मंजुरी, शोध आणि रेटिंग या सर्व सुविधा या चाचणी आवृत्तीत जोडलेल्या आहेत. माहिती ब्राउझरमध्येच साठते.</div>
+      <div id="skillResults" class="info-grid"></div>      <div class="callout">नोंदणी, संपर्क संमती, प्रशासकीय मंजुरी, शोध आणि रेटिंग या सुविधा सर्व्हरवरील डेटाबेसमधून चालतात. फक्त मंजूर आणि संपर्क-संमती दिलेली प्रोफाइल येथे दाखवली जातात.</div>
     </section>
     <section id="suggestions" class="page section-wrap">
       <div class="page-title"><span class="eyebrow">नागरिकांचा सहभाग</span><h1>गावविकास सूचना</h1><p>गावाच्या गरजा, समस्या आणि विकासासाठी नागरिकांच्या सूचना नोंदवा.</p></div>
@@ -352,7 +352,7 @@
         </form>
       </div>
       <div class="panel"><h2>मंजूर कामगारांचे रेटिंग</h2><div id="workerRatingSummary"><p class="small-muted">रेटिंग उपलब्ध नाही.</p></div></div>
-      <p class="privacy-note">ही स्थानिक चाचणी आवृत्ती आहे. ऑनलाइन प्रकाशित रेटिंगसाठी सर्व्हरवरील पडताळणी, गैरवापर प्रतिबंध आणि तक्रार प्रक्रिया आवश्यक आहे.</p>
+      <p class="privacy-note">रेटिंग प्रशासकीय तपासणीनंतरच सार्वजनिक सरासरीत मोजली जाते.</p>
     </section>
 
     <section id="survey" class="page section-wrap">
@@ -362,6 +362,17 @@
     <p>गावाच्या विकास नियोजनासाठी कुटुंबांची व विद्यार्थ्यांची माहिती संकलित करण्याचे प्रारूप.</p>
   </div>
 
+  <div id="surveyAuthPanel" class="panel">
+    <h2>सर्वेक्षणासाठी लॉगिन</h2>
+    <p id="surveySessionStatus" class="small-muted" role="status">कुटुंब नोंदी पाहण्यासाठी सर्वेक्षक किंवा प्रशासक म्हणून लॉगिन करा.</p>
+    <form id="surveyLoginForm">
+      <label for="surveyUsername">वापरकर्तानाव</label><input id="surveyUsername" name="username" autocomplete="username" required>
+      <label for="surveyPassword">पासवर्ड</label><input id="surveyPassword" name="password" type="password" autocomplete="current-password" required>
+      <button class="button button-primary" type="submit">लॉगिन करा</button>
+      <button id="surveyLogoutButton" class="button button-light" type="button" hidden>लॉगआउट</button>
+    </form>
+  </div>
+  <div id="surveyWorkspace" hidden>
   <div class="panel">
     <h2>कुटुंबाची प्राथमिक माहिती</h2>
 
@@ -382,15 +393,16 @@
       <button type="button" id="saveFamilySurvey" class="button button-primary" style="background:#15803d;color:#fff;border-color:#15803d">नवीन कुटुंबाची नोंद जतन करा</button>
       <button type="button" id="updateFamilySurvey" class="button button-primary" style="display:none;background:#d97706;color:#fff;border-color:#d97706">नोंद अद्ययावत करा</button>
       <button type="button" id="newFamilySurvey" class="button" style="background:#475569;color:#fff;border-color:#475569">नवीन नोंद सुरू करा</button>
-      <button type="button" id="exportFamilySurvey" class="button" style="background:#2563eb;color:#fff;border-color:#2563eb">JSON डेटा फाइल डाउनलोड करा</button>
-      <button type="button" id="importFamilySurvey" class="button" style="background:#7c3aed;color:#fff;border-color:#7c3aed">JSON बॅकअपमधून माहिती परत आणा</button>
-      <input type="file" id="importFamilySurveyFile" accept=".json,application/json" style="display:none">
+      <button type="button" id="exportFamilySurvey" data-admin-only hidden class="button" style="background:#2563eb;color:#fff;border-color:#2563eb">JSON डेटा फाइल डाउनलोड करा</button>
+      <button type="button" id="exportLegacyFamilyRecords" data-admin-only hidden class="button button-light">जुन्या ब्राउझर नोंदींचा JSON बॅकअप</button>
+      <button type="button" id="importFamilySurvey" data-admin-only hidden class="button" style="background:#7c3aed;color:#fff;border-color:#7c3aed">JSON बॅकअपमधून माहिती परत आणा</button>
+      <input type="file" id="importFamilySurveyFile" data-admin-only hidden accept=".json,application/json" style="display:none">
       <button type="button" id="exportFamilySurveyCSV" class="button" style="background:#0f766e;color:#fff;border-color:#0f766e">Excel साठी CSV डाउनलोड करा</button>
       <button type="button" id="clearFamilySurvey" class="button" style="background:#b91c1c;color:#fff;border-color:#b91c1c">फॉर्म रिकामा करा</button>
     </div>
     <section id="savedFamiliesPanel" class="panel" style="margin-top:22px">
       <h2>जतन केलेल्या कुटुंबांची यादी</h2>
-      <p class="small-muted">या ब्राउझरमध्ये जतन केलेल्या सर्व कुटुंबांच्या नोंदी येथे दिसतील.</p>
+      <p class="small-muted">लॉगिन केलेल्या सर्वेक्षक किंवा प्रशासकासाठी सर्व्हरवरील कुटुंब नोंदी येथे दिसतील.</p>
       <div id="familySearchHighlight" style="margin:18px 0 16px;padding:18px;background:#ecfdf5;border:2px solid #0f766e;border-left:8px solid #0f766e;border-radius:12px;box-shadow:0 3px 10px rgba(15,118,110,.12)">
         <label for="savedFamiliesSearch" style="display:block;margin:0 0 10px;font-weight:800;font-size:19px;color:#115e59">🔎 कुटुंब शोधा</label>
         <div style="font-size:14px;font-weight:600;color:#334155;margin-bottom:9px">घर क्रमांक, कुटुंबप्रमुखाचे नाव किंवा कुटुंबातील कोणत्याही सदस्याचे नाव टाका.</div>
@@ -410,24 +422,23 @@
       </div>
       <p id="savedFamiliesEmpty" class="small-muted" style="display:none">अद्याप स्वतंत्र कुटुंब नोंदी सापडल्या नाहीत. नोंद जतन केल्यावर ती येथे दिसेल.</p>
     </section>
-    <section id="jsonBackupCheckPanel" class="panel" style="margin-top:22px;border:2px solid #7c3aed;background:#faf5ff">
+    <section id="jsonBackupCheckPanel" class="panel" data-admin-only hidden style="margin-top:22px;border:2px solid #7c3aed;background:#faf5ff">
       <h2 style="color:#6d28d9">JSON बॅकअप तपासणी</h2>
-      <p class="small-muted">येथे निवडलेली JSON फाईल प्रथम स्वतंत्र रिकाम्या चाचणी संचात तपासली जाईल. या चाचणीमुळे वेबसाइटमधील प्रत्यक्ष नोंदींमध्ये कोणतीही भर, बदल किंवा डिलीट होणार नाही.</p>
+      <p class="small-muted">JSON फाईल सर्व्हरच्या dry-run API ने तपासली जाईल. तपासणीमुळे प्रत्यक्ष नोंदींमध्ये कोणतीही भर, बदल किंवा डिलीट होणार नाही.</p>
       <button type="button" id="checkJsonBackupButton" class="button" style="background:#6d28d9;color:#fff;border-color:#6d28d9">JSON बॅकअप तपासा</button>
       <input type="file" id="checkJsonBackupFile" accept=".json,application/json" style="display:none">
       <div id="jsonBackupCheckSummary" aria-live="polite" style="margin-top:14px"></div>
       <div id="jsonBackupCheckDetails" style="margin-top:12px;overflow-x:auto"></div>
     </section>
-    <p id="surveySaveStatus" class="small-muted" role="status" aria-live="polite">टीप: सध्या माहिती फक्त या ब्राउझरमध्ये जतन होते; ही सुरक्षित केंद्रीय डेटाबेस व्यवस्था नाही.</p>
+    <p id="surveySaveStatus" class="small-muted" role="status" aria-live="polite">नोंदी सुरक्षित सर्व्हरवरील डेटाबेसमध्ये जतन होतात.</p>
 
-    <p class="small-muted">
-      हे सध्या नमुना प्रारूप आहे. माहिती सुरक्षितपणे साठवण्यासाठी पुढे डेटाबेस व अधिकृत लॉगिन जोडावे लागेल.
-    </p>
+  </div>
   </div>
 </section>
     <section id="statistics" class="page section-wrap">
       <div class="page-title"><span class="eyebrow">माहितीवर आधारित नियोजन</span><h1>गावाची आकडेवारी</h1><p>कुटुंब सर्वेक्षणात जतन केलेल्या नोंदींवरून एकत्रित आकडेवारी.</p></div>
-      <div class="stats-grid">
+      <div id="statsAuthNote" class="panel">एकत्रित कुटुंब आकडेवारी पाहण्यासाठी सर्वेक्षक किंवा प्रशासक म्हणून लॉगिन करा.</div>
+      <div class="stats-grid" id="statsDashboard" hidden>
         <article class="stat-card"><span>नोंदणीकृत कुटुंबे</span><strong id="statFamilies">0</strong><small>जतन केलेल्या स्वतंत्र नोंदी</small></article>
         <article class="stat-card"><span>एकूण सदस्य</span><strong id="statMembers">0</strong><small>कुटुंबातील सदस्यसंख्येची बेरीज</small></article>
         <article class="stat-card"><span>पुरुष</span><strong id="statMale">0</strong><small>लिंग नोंदीनुसार</small></article>
@@ -444,28 +455,36 @@
     </section>
 
     <section id="admin" class="page section-wrap">
-      <div class="page-title"><span class="eyebrow">मर्यादित प्रवेश</span><h1>प्रशासकीय विभाग</h1><p>हा सध्या केवळ नमुना माहिती पृष्ठ आहे. प्रत्यक्ष लॉगिन आणि सुरक्षा सर्व्हरवर लागू करणे आवश्यक आहे.</p></div>
-      <div class="warning-box"><strong>महत्त्वाची सुरक्षा सूचना</strong><p>या नमुना वेबसाइटमध्ये वास्तविक लॉगिन, सुरक्षित डेटाबेस किंवा ऑनलाइन डेटा-संकलन सक्रिय केलेले नाही. या HTML फाइलमध्ये पासवर्ड ठेवू नका आणि प्रत्यक्ष कुटुंब/विद्यार्थी माहिती येथे भरू नका.</p></div>
+      <div class="page-title"><span class="eyebrow">मर्यादित प्रवेश</span><h1>प्रशासकीय विभाग</h1><p>मंजुरीसाठी प्रलंबित सूचना, कामगार आणि रेटिंग पाहण्यासाठी प्रशासक म्हणून लॉगिन करा.</p></div>
+      <div id="adminAuthPanel" class="panel">
+        <h2>प्रशासक लॉगिन</h2>
+        <p id="adminSessionStatus" class="small-muted" role="status">प्रशासकीय कृतींसाठी सर्व्हरने प्रशासक म्हणून पुष्टी करणे आवश्यक आहे.</p>
+        <form id="adminLoginForm">
+          <label for="adminUsername">वापरकर्तानाव</label><input id="adminUsername" name="username" autocomplete="username" required>
+          <label for="adminPassword">पासवर्ड</label><input id="adminPassword" name="password" type="password" autocomplete="current-password" required>
+          <button class="button button-primary" type="submit">लॉगिन करा</button>
+          <button id="adminLogoutButton" class="button button-light" type="button" hidden>लॉगआउट</button>
+        </form>
+      </div>
       <div class="info-grid">
         <article class="panel"><h3>मुख्य प्रशासक</h3><p>वापरकर्ते, अधिकार, संपूर्ण प्रणालीची मांडणी आणि बॅकअप व्यवस्थापन.</p></article>
         <article class="panel"><h3>माहिती संपादक</h3><p>गावाची माहिती, बातम्या, छायाचित्रे आणि विकासकामे अद्ययावत करणे.</p></article>
         <article class="panel"><h3>सर्वेक्षण व्यवस्थापक</h3><p>कुटुंब/विद्यार्थी नोंदी, पडताळणी आणि अधिकृत अहवाल.</p></article>
       </div>
-      <section class="panel" id="stage23LocalApprovalPanel" style="margin-top:20px">
-        <h2>Stage 23 चाचणी — मंजुरीसाठी आलेल्या नोंदी</h2>
-        <p class="small-muted">ही केवळ या ब्राउझरमधील नमुना मंजुरी आहे; प्रत्यक्ष प्रशासकीय लॉगिन किंवा सर्व्हर सुरक्षा नाही.</p>
+      <section class="panel" id="stage23LocalApprovalPanel" data-admin-only hidden style="margin-top:20px">
+        <h2>मंजुरीसाठी प्रलंबित नोंदी</h2>
+        <p class="small-muted">मंजूर केल्यावर सूचना किंवा कामगार सार्वजनिक होतील; नाकारल्यास नोंद हटवली जाईल.</p>
         <div id="stage23PendingQueue"><p class="small-muted">प्रलंबित नोंदी नाहीत.</p></div>
       </section>
-      <h2 class="subheading">अंतिम प्रणालीपूर्वी पूर्ण करावयाच्या बाबी</h2>
-      <ol class="checklist"><li>डोमेन व HTTPS होस्टिंग</li><li>सर्व्हर-साइड लॉगिन व भूमिका-आधारित प्रवेश</li><li>केंद्रीय डेटाबेस आणि सुरक्षित API</li><li>ऑफलाइन सर्वेक्षण व सिंक्रोनायझेशन</li><li>बॅकअप, ऑडिट लॉग व पुनर्प्राप्ती चाचणी</li><li>गोपनीयता सूचना, संमती आणि डेटा-धारण धोरण</li><li>अहवाल व CSV/Excel निर्यात चाचणी</li></ol>
+      <h2 class="subheading">प्रत्यक्ष वापरापूर्वी आवश्यक बाबी</h2>
+      <ol class="checklist"><li>डोमेन व HTTPS होस्टिंग</li><li>गोपनीयता सूचना, संमती आणि डेटा-धारण धोरण मंजूर करणे</li><li>विश्वासार्ह सर्वेक्षकांसाठी स्वतंत्र खाती तयार करणे</li><li>नियमित बॅकअप व पुनर्प्राप्ती चाचणी करणे</li><li>ऑफलाइन सर्वेक्षण आणि सिंक्रोनायझेशन सध्या उपलब्ध नाही</li><li>गावाची स्थिर माहिती व अहवाल अधिकृत स्रोतांशी पडताळणे</li></ol>
     </section>
   </main>
 
   <footer class="site-footer">
     <div><strong>माझं गाव केकतउमरा</strong><p>गावाची माहिती • शाळा विकास • कौशल्य • लोकसहभाग</p></div>
-    <div class="footer-note">ही प्रारंभिक नमुना आवृत्ती आहे. प्रत्यक्ष माहिती आणि ऑनलाइन डेटाबेस जोडण्यापूर्वी पडताळणी आवश्यक आहे.</div>
+    <div class="footer-note">प्रत्यक्ष कुटुंब माहिती संकलित करण्यापूर्वी गोपनीयता सूचना, संमती आणि डेटा-धारण नियम निश्चित करा.</div>
   </footer>
-  <script id="stage25-isolated-copy">(function(){[["keketUmraFamilyRecordsV1","keketUmraFamilyRecordsStage25V1"],["keketUmraFamilySurveyDraft","keketUmraFamilySurveyDraftStage25V1"],["keketUmraVillageSuggestionsV1","keketUmraVillageSuggestionsStage25V1"],["keketUmraSkilledWorkersV1","keketUmraSkilledWorkersStage25V1"],["keketUmraWorkerRatingsV1","keketUmraWorkerRatingsStage25V1"]].forEach(([a,b])=>{if(localStorage.getItem(b)===null&&localStorage.getItem(a)!==null)localStorage.setItem(b,localStorage.getItem(a));});})();</script>
   <script>
   (function () {
     const countInput = document.getElementById("familyCount");
@@ -663,14 +682,17 @@
     function collectSurvey() {
       const data = {};
       document.querySelectorAll("#survey input, #survey select, #survey textarea").forEach(el => {
-        if (el.id) data[el.id] = el.value;
+        if (el.id && /^(familyHead|houseNumber|familyCount|familySuggestions|member\d+_)/.test(el.id)) data[el.id] = el.value;
       });
       data.savedAt = new Date().toISOString();
       return data;
     }
     const status = document.getElementById("surveySaveStatus");
-    const recordsKey = "keketUmraFamilyRecordsStage25V1";
+    const draftKey = "keketUmraFamilySurveyDraftStage25V1";
+    let familyRecords = [];
+    let recordsRequest = 0;
     let editingRecordId = null;
+    let baseSavedAt = null;
     function setEditMode(isEditing) {
       const saveButton = document.getElementById("saveFamilySurvey");
       const updateButton = document.getElementById("updateFamilySurvey");
@@ -678,42 +700,52 @@
       if (updateButton) updateButton.style.display = isEditing ? "inline-flex" : "none";
     }
     function readRecords() {
-      try {
-        const value = JSON.parse(localStorage.getItem(recordsKey) || "[]");
-        return Array.isArray(value) ? value : [];
-      } catch (_) { return []; }
+      return familyRecords;
     }
-    // Stage 19: कुटुंब नोंदींवरून एकत्रित गाव आकडेवारी मोजा.
-    function updateVillageStatistics() {
-      const records = readRecords();
-      let members = 0, male = 0, female = 0, other = 0, missing = 0;
-      records.forEach(record => {
-        const count = Math.max(0, Math.min(30, parseInt(record.familyCount, 10) || 0));
-        members += count;
-        for (let i = 1; i <= count; i++) {
-          const gender = String(record[`member${i}_gender`] || "").trim();
-          if (gender === "पुरुष") male++;
-          else if (gender === "महिला") female++;
-          else if (gender === "इतर") other++;
-          else missing++;
-        }
-      });
-      const values = {statFamilies: records.length, statMembers: members, statMale: male, statFemale: female, statOther: other, statMissing: missing};
-      Object.entries(values).forEach(([id, value]) => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = String(value);
-      });
-      const note = document.getElementById("statsDataNote");
-      if (note) note.textContent = `सध्या ${records.length} कुटुंबे आणि ${members} सदस्यांच्या स्थानिक नोंदींवरून आकडेवारी मोजली आहे.`;
-      const validation = document.getElementById("statsValidationNote");
-      if (validation) {
-        validation.textContent = missing === 0
-          ? "सर्व सदस्यांसाठी लिंगाची नोंद उपलब्ध आहे. तरीही आकडेवारी अधिकृत वापरापूर्वी मूळ नोंदींशी पडताळा."
-          : `${missing} सदस्यांचे लिंग रिकामे किंवा मान्य पर्यायांबाहेर आहे. त्या कुटुंबांच्या नोंदी तपासून माहिती पूर्ण करा.`;
-        validation.style.borderColor = missing === 0 ? "#86bca0" : "#e4b35d";
+    async function reloadFamilyRecords(query = "") {
+      if (!window.apiRequest) return false;
+      const request = ++recordsRequest;
+      const params = new URLSearchParams();
+      if (query.trim()) params.set("q", query.trim());
+      try {
+        const path = `/api/families${params.size ? `?${params}` : ""}`;
+        const records = await window.apiRequest(path);
+        if (request !== recordsRequest) return;
+        familyRecords = records;
+        renderSavedFamilies(false);
+        if (!query.trim()) await updateVillageStatistics();
+        return true;
+      } catch (error) {
+        if (request !== recordsRequest) return;
+        if (status) status.textContent = `कुटुंब नोंदी लोड करता आल्या नाहीत: ${error.message}`;
+        return false;
       }
     }
-    function renderSavedFamilies() {
+    // Stage 19: कुटुंब नोंदींवरून एकत्रित गाव आकडेवारी मोजा.
+    async function updateVillageStatistics() {
+      if (!window.apiRequest || !window.currentUser) return;
+      try {
+      const values = await window.apiRequest("/api/families/stats");
+      Object.entries(values).forEach(([id, value]) => {
+        const statIds = {families:"statFamilies", members:"statMembers", male:"statMale", female:"statFemale", other:"statOther", missing:"statMissing"};
+        const target = document.getElementById(statIds[id]);
+        if (target) target.textContent = String(value);
+      });
+      const note = document.getElementById("statsDataNote");
+      if (note) note.textContent = `सर्व्हरवरील ${values.families} कुटुंबे आणि ${values.members} सदस्यांच्या एकत्रित नोंदींवरून आकडेवारी मोजली आहे.`;
+      const validation = document.getElementById("statsValidationNote");
+      if (validation) {
+        validation.textContent = values.missing === 0
+          ? "सर्व सदस्यांसाठी लिंगाची नोंद उपलब्ध आहे. तरीही आकडेवारी अधिकृत वापरापूर्वी मूळ नोंदींशी पडताळा."
+          : `${values.missing} सदस्यांचे लिंग रिकामे किंवा मान्य पर्यायांबाहेर आहे. त्या कुटुंबांच्या नोंदी तपासून माहिती पूर्ण करा.`;
+        validation.style.borderColor = values.missing === 0 ? "#86bca0" : "#e4b35d";
+      }
+      } catch (error) {
+        const note = document.getElementById("statsDataNote");
+        if (note) note.textContent = `आकडेवारी लोड करता आली नाही: ${error.message}`;
+      }
+    }
+    function renderSavedFamilies(updateStats = true) {
       const records = readRecords();
       const body = document.getElementById("savedFamiliesTableBody");
       const countLabel = document.getElementById("savedFamiliesCount");
@@ -727,23 +759,15 @@
         .replace(/\s+/g, " ")
         .toLocaleLowerCase("mr");
       const query = normalizeSearch(searchInput ? searchInput.value : "");
-      const filteredRecords = records.filter(record => {
-        if (!query) return true;
-        const searchable = [record.houseNumber, record.familyHead];
-        const count = Math.max(0, Math.min(30, parseInt(record.familyCount, 10) || 0));
-        for (let i = 1; i <= count; i++) searchable.push(record["member" + i + "_name"]);
-        return searchable.some(value => normalizeSearch(value).includes(query));
-      });
-
       countLabel.textContent = query
-        ? "एकूण नोंदी: " + records.length + " | शोधाशी जुळणाऱ्या नोंदी: " + filteredRecords.length
+        ? "शोधाशी जुळणाऱ्या नोंदी: " + records.length
         : "एकूण जतन केलेली कुटुंबे: " + records.length;
-      empty.style.display = filteredRecords.length ? "none" : "block";
-      empty.textContent = records.length
+      empty.style.display = records.length ? "none" : "block";
+      empty.textContent = query
         ? "या शोधासाठी जुळणारी कुटुंबाची नोंद सापडली नाही. दुसरा शब्द किंवा घर क्रमांक वापरून पाहा."
         : "अद्याप स्वतंत्र कुटुंब नोंदी सापडल्या नाहीत. नोंद जतन केल्यावर ती येथे दिसेल.";
 
-      filteredRecords.slice().reverse().forEach(record => {
+      records.forEach(record => {
         const tr = document.createElement("tr");
         [record.houseNumber || "", record.familyHead || "", record.familyCount || ""].forEach(value => {
           const td = document.createElement("td");
@@ -767,43 +791,41 @@
         printButton.addEventListener("click", () => printFamilyRecord(record.recordId));
         actionCell.appendChild(printButton);
 
+        if (window.currentUser?.role === "admin") {
         const deleteButton = document.createElement("button");
         deleteButton.type = "button";
         deleteButton.textContent = "डिलीट";
         deleteButton.style.cssText = "margin-left:6px;padding:7px 10px;border:0;border-radius:6px;background:#b91c1c;color:white;cursor:pointer";
-        deleteButton.addEventListener("click", () => {
+        deleteButton.addEventListener("click", async () => {
           const confirmed = confirm(
             `घर क्रमांक: ${record.houseNumber || "—"}\\nकुटुंबप्रमुख: ${record.familyHead || "—"}\\nसदस्यसंख्या: ${record.familyCount || "—"}\\n\\nही संपूर्ण कुटुंब नोंद कायमची डिलीट करायची आहे का? ही कृती परत पूर्ववत करता येणार नाही.`
           );
           if (!confirmed) return;
-          const latestRecords = readRecords();
-          const index = latestRecords.findIndex(item => item.recordId === record.recordId);
-          if (index < 0) {
-            status.textContent = "ही नोंद आधीच काढलेली आहे किंवा सापडली नाही. यादी पुन्हा तपासा.";
-            renderSavedFamilies();
-            return;
-          }
-          latestRecords.splice(index, 1);
-          localStorage.setItem(recordsKey, JSON.stringify(latestRecords));
           try {
-            const draft = JSON.parse(localStorage.getItem("keketUmraFamilySurveyDraftStage25V1") || "null");
+          await window.apiRequest(`/api/families/${encodeURIComponent(record.recordId)}`, {method:"DELETE", body:{}});
+          try {
+            const draft = JSON.parse(localStorage.getItem(draftKey) || "null");
             if (draft && draft.recordId === record.recordId) {
-              localStorage.removeItem("keketUmraFamilySurveyDraftStage25V1");
+              localStorage.removeItem(draftKey);
               editingRecordId = null;
               setEditMode(false);
             }
           } catch (_) { /* draft can be ignored if invalid */ }
-          renderSavedFamilies();
+          await reloadFamilyRecords(document.getElementById("savedFamiliesSearch")?.value || "");
           status.textContent = `घर क्रमांक ${record.houseNumber || "—"} — ${record.familyHead || "कुटुंब"} यांची नोंद डिलीट केली. उर्वरित कुटुंब नोंदी सुरक्षित आहेत.`;
+          } catch (error) {
+            status.textContent = `नोंद डिलीट करता आली नाही: ${error.message}`;
+          }
         });
         actionCell.appendChild(deleteButton);
+        }
 
         tr.appendChild(actionCell);
         body.appendChild(tr);
       });
-      updateVillageStatistics();
+      if (updateStats) updateVillageStatistics();
     }
-    document.getElementById("savedFamiliesSearch")?.addEventListener("input", renderSavedFamilies);
+    document.getElementById("savedFamiliesSearch")?.addEventListener("input", event => reloadFamilyRecords(event.target.value));
     document.getElementById("refreshVillageStats")?.addEventListener("click", updateVillageStatistics);
     function printFamilyRecord(recordId) {
       const record = readRecords().find(item => item.recordId === recordId);
@@ -1027,10 +1049,17 @@ button{padding:9px 18px;border:0;border-radius:5px;background:#166534;color:#fff
       printWindow.document.close();
     }
 
-    function loadRecordForEdit(recordId) {
-      const record = readRecords().find(item => item.recordId === recordId);
-      if (!record) { status.textContent = "ही नोंद सापडली नाही."; return; }
+    async function loadRecordForEdit(recordId) {
+      let record;
+      try {
+        record = await window.apiRequest(`/api/families/${encodeURIComponent(recordId)}`);
+      } catch (error) {
+        status.textContent = `ही नोंद उघडता आली नाही: ${error.message}`;
+        return;
+      }
+      familyRecords = [record, ...familyRecords.filter(item => item.recordId !== record.recordId)];
       editingRecordId = recordId;
+      baseSavedAt = record.savedAt;
       // महत्त्वाचे: दुसऱ्या कुटुंबाचा फॉर्म उघडण्यापूर्वी मागील फॉर्ममधील मूल्ये पुसा.
       // अन्यथा जुन्या नोंदीत लिंग रिकामे असल्यास आधीच्या कुटुंबाचे लिंग चुकून राहू शकते.
       document.querySelectorAll("#survey input, #survey select, #survey textarea").forEach(el => { el.value = ""; });
@@ -1065,6 +1094,7 @@ button{padding:9px 18px;border:0;border-radius:5px;background:#166534;color:#fff
         if (el && !["savedAt", "createdAt", "recordId"].includes(id)) el.value = value ?? "";
       });
       editingRecordId = matchingId;
+      baseSavedAt = matchingId ? records.find(item => item.recordId === matchingId)?.savedAt || null : null;
       const saveButton = document.getElementById("saveFamilySurvey");
       if (saveButton) saveButton.textContent = "नवीन कुटुंबाची नोंद जतन करा";
       setEditMode(Boolean(matchingId));
@@ -1074,8 +1104,30 @@ button{padding:9px 18px;border:0;border-radius:5px;background:#166534;color:#fff
       return true;
     }
     renderSavedFamilies();
+    async function persistFamilyRecord(data, acknowledge) {
+      const method = editingRecordId ? "PUT" : "POST";
+      const path = editingRecordId
+        ? `/api/families/${encodeURIComponent(editingRecordId)}`
+        : "/api/families";
+      const body = {record: data, acknowledge};
+      if (editingRecordId) body.baseSavedAt = baseSavedAt;
+      try {
+        return await window.apiRequest(path, {method, body});
+      } catch (error) {
+        if (error.code !== "needs_confirmation") throw error;
+        const warnings = error.data?.warnings || [];
+        const message = warnings.map(item => item.message).join("\n\n") +
+          "\n\nमाहिती तपासून ही नोंद पुढे जतन करायची आहे का?";
+        if (!confirm(message)) {
+          error.cancelled = true;
+          throw error;
+        }
+        body.acknowledge = [...new Set([...acknowledge, ...warnings.map(item => item.code)])];
+        return window.apiRequest(path, {method, body});
+      }
+    }
     // प्रत्येक कुटुंब स्वतंत्र नोंद म्हणून साठवा. संपादन करताना त्याच नोंदीत बदल करा.
-    document.getElementById("saveFamilySurvey")?.addEventListener("click", () => {
+    document.getElementById("saveFamilySurvey")?.addEventListener("click", async () => {
       try {
         syncFamilyHeadToMemberOne();
         const data = collectSurvey();
@@ -1128,7 +1180,8 @@ button{padding:9px 18px;border:0;border-radius:5px;background:#166534;color:#fff
           }
           data[mobileKey] = unchangedExistingMobile ? previousMobile : mobileDigits;
         }
-        const records = readRecords();
+        const records = await window.apiRequest("/api/families");
+        familyRecords = records;
         const norm = value => String(value || "").trim().replace(/\s+/g, " ").toLocaleLowerCase("mr");
         const digits = value => String(value || "").replace(/\D/g, "");
         const memberList = record => {
@@ -1183,6 +1236,7 @@ button{padding:9px 18px;border:0;border-radius:5px;background:#166534;color:#fff
 
         // एकाच घरात समान नावाचे वेगवेगळे कुटुंब असू शकते. म्हणून नावावरून
         // नोंद रोखत नाही; वापरकर्त्याला पडताळणी करून वेगळे कुटुंब जतन करू देतो.
+        const acknowledge = [];
         if (sameHouseHead.length) {
           const proceed = confirm(
             "या घर क्रमांकाची आणि कुटुंबप्रमुखाच्या नावाची नोंद आधीपासून आहे. मात्र सदस्यांची जन्मतारीख / मोबाईल जुळत नाही. एकाच घरात समान नावाची वेगळी कुटुंबे असू शकतात.\n\nही खरोखर वेगळी कुटुंब नोंद असल्यास OK दाबा. दुबार नोंद असल्यास Cancel दाबून आधीची नोंद संपादित करा."
@@ -1192,6 +1246,7 @@ button{padding:9px 18px;border:0;border-radius:5px;background:#166534;color:#fff
             renderSavedFamilies();
             return;
           }
+          acknowledge.push("same_house_head");
         }
 
         // वेगळ्या घरातील कुटुंबातही तीच व्यक्ती आढळल्यास नाव एकटे निर्णायक मानत नाही.
@@ -1216,28 +1271,29 @@ button{padding:9px 18px;border:0;border-radius:5px;background:#166534;color:#fff
             renderSavedFamilies();
             return;
           }
+          acknowledge.push("same_person_other_family");
         }
-        if (editingRecordId) {
-          const index = records.findIndex(item => item.recordId === editingRecordId);
-          if (index < 0) throw new Error("Record not found");
-          data.recordId = editingRecordId;
-          data.createdAt = records[index].createdAt || records[index].savedAt;
-          records[index] = data;
-        } else {
-          data.recordId = "KUM-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 7);
-          data.createdAt = data.savedAt;
-          records.push(data);
-        }
-        localStorage.setItem(recordsKey, JSON.stringify(records));
-        localStorage.setItem("keketUmraFamilySurveyDraftStage25V1", JSON.stringify(data));
+        const saved = await persistFamilyRecord(data, acknowledge);
+        familyRecords = [saved, ...familyRecords.filter(item => item.recordId !== saved.recordId)];
+        localStorage.removeItem(draftKey);
         editingRecordId = null;
+        baseSavedAt = null;
         const saveButton = document.getElementById("saveFamilySurvey");
         if (saveButton) saveButton.textContent = "नवीन कुटुंबाची नोंद जतन करा";
         setEditMode(false);
-        renderSavedFamilies();
-        status.textContent = `कुटुंबाची नोंद यशस्वीरीत्या जतन / अद्ययावत झाली. एकूण जतन केलेली कुटुंबे: ${records.length}. गावाची आकडेवारीही अद्ययावत केली आहे. ही माहिती सध्या याच ब्राउझरमध्ये आहे; JSON बॅकअप स्वतंत्रपणे घ्या.`;
+        await reloadFamilyRecords("");
+        status.textContent = `कुटुंबाची नोंद सर्व्हरवर यशस्वीरीत्या ${saved.createdAt === saved.savedAt ? "जतन" : "जतन / अद्ययावत"} झाली. एकूण नोंदी: ${familyRecords.length}.`;
       } catch (e) {
-        status.textContent = "माहिती जतन करता आली नाही. ब्राउझरची साठवण जागा तपासा. आधीची माहिती बदललेली नाही.";
+        if (e.cancelled) {
+          status.textContent = "नोंद जतन करण्याची पुष्टी रद्द केली. कोणताही बदल केलेला नाही.";
+        } else if (e.code === "duplicate_family") {
+          status.textContent = e.message;
+        } else if (e.code === "conflict") {
+          status.textContent = `${e.message} सध्याची नोंद पुन्हा लोड केली आहे.`;
+          await reloadFamilyRecords("");
+        } else {
+          status.textContent = `कुटुंब नोंद जतन करता आली नाही: ${e.message}`;
+        }
       }
     });
     document.getElementById("updateFamilySurvey")?.addEventListener("click", () => {
@@ -1253,8 +1309,10 @@ button{padding:9px 18px;border:0;border-radius:5px;background:#166534;color:#fff
     document.getElementById("newFamilySurvey")?.addEventListener("click", () => {
       if (!confirm("नवीन कुटुंबाची रिकामी नोंद सुरू करायची आहे का? आधी जतन केलेल्या नोंदी सुरक्षित राहतील.")) return;
       document.querySelectorAll("#survey input, #survey select, #survey textarea").forEach(el => { el.value = ""; });
+      localStorage.removeItem(draftKey);
       countInput.value = "";
       editingRecordId = null;
+      baseSavedAt = null;
       const saveButton = document.getElementById("saveFamilySurvey");
       if (saveButton) saveButton.textContent = "नवीन कुटुंबाची नोंद जतन करा";
       setEditMode(false);
@@ -1262,14 +1320,35 @@ button{padding:9px 18px;border:0;border-radius:5px;background:#166534;color:#fff
       status.textContent = "नवीन कुटुंबाची रिकामी नोंद तयार आहे. माहिती भरून ‘नवीन कुटुंबाची नोंद जतन करा’ दाबा.";
       document.getElementById("familyHead")?.focus();
     });
-    document.getElementById("exportFamilySurvey")?.addEventListener("click", () => {
-      const records = readRecords();
-      const backup = { backupType: "keketUmraFamilyRecordsV1", exportedAt: new Date().toISOString(), records };
-      const blob = new Blob([JSON.stringify(backup, null, 2)], {type: "application/json;charset=utf-8"});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a"); a.href = url; a.download = "keket_umra_survey_draft.json"; a.click();
-      URL.revokeObjectURL(url);
-      status.textContent = "JSON फाइल डाउनलोड करण्याची विनंती केली आहे. फाइल सुरक्षित ठिकाणी ठेवा.";
+    document.getElementById("exportFamilySurvey")?.addEventListener("click", async () => {
+      try {
+        const backup = await window.apiRequest("/api/families/export");
+        const blob = new Blob([JSON.stringify(backup, null, 2)], {type: "application/json;charset=utf-8"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a"); a.href = url; a.download = "keket_umra_survey_backup.json"; a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        status.textContent = "सर्व्हरवरील कुटुंब नोंदींची JSON बॅकअप फाइल डाउनलोड केली.";
+      } catch (error) {
+        status.textContent = `JSON बॅकअप डाउनलोड करता आला नाही: ${error.message}`;
+      }
+    });
+    document.getElementById("exportLegacyFamilyRecords")?.addEventListener("click", () => {
+      try {
+        const stored = localStorage.getItem("keketUmraFamilyRecordsStage25V1") ??
+          localStorage.getItem("keketUmraFamilyRecordsV1");
+        const legacy = JSON.parse(stored || "[]");
+        if (!Array.isArray(legacy) || !legacy.length) {
+          status.textContent = "या ब्राउझरमध्ये जुन्या कुटुंब नोंदी सापडल्या नाहीत.";
+          return;
+        }
+        const backup = {backupType:"keketUmraFamilyRecordsV1", exportedAt:new Date().toISOString(), records:legacy};
+        const url = URL.createObjectURL(new Blob([JSON.stringify(backup, null, 2)], {type:"application/json;charset=utf-8"}));
+        const link = document.createElement("a"); link.href = url; link.download = "keket_umra_legacy_family_records.json"; link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        status.textContent = `${legacy.length} जुन्या ब्राउझर नोंदींचा JSON बॅकअप डाउनलोड केला. सर्व्हरवर हलवण्यासाठी प्रशासक म्हणून लॉगिन करून ही फाइल आयात करा.`;
+      } catch (error) {
+        status.textContent = `जुन्या ब्राउझर नोंदी वाचता आल्या नाहीत: ${error.message}`;
+      }
     });
     // JSON बॅकअपमधून माहिती परत आणणे: विद्यमान नोंदी कधीही overwrite होत नाहीत.
     const importButton = document.getElementById("importFamilySurvey");
@@ -1306,60 +1385,27 @@ button{padding:9px 18px;border:0;border-radius:5px;background:#166534;color:#fff
           valid.push(record);
         }
 
-        const existing = readRecords();
-        const existingIds = new Set(existing.map(record => String(record.recordId || "")));
-        const normalize = value => String(value || "").trim().replace(/\s+/g, " ").toLocaleLowerCase("mr");
-        const digitsOnly = value => String(value || "").replace(/\D/g, "");
-        const people = record => {
-          const total = Math.max(0, Math.min(30, parseInt(record.familyCount, 10) || 0));
-          const list = [];
-          for (let n = 1; n <= total; n++) {
-            const name = normalize(record[`member${n}_name`]);
-            if (name) list.push({
-              name,
-              dob: String(record[`member${n}_dob`] || "").trim(),
-              mobile: digitsOnly(record[`member${n}_mobile`])
-            });
-          }
-          return list;
-        };
-        const personMatch = (a, b) => a.name && a.name === b.name &&
-          !(a.mobile && b.mobile && a.mobile !== b.mobile) &&
-          ((a.dob && b.dob && a.dob === b.dob) || (a.mobile && b.mobile && a.mobile === b.mobile));
-        const familyMatch = (a, b) => normalize(a.houseNumber) === normalize(b.houseNumber) &&
-          normalize(a.familyHead) === normalize(b.familyHead) &&
-          people(a).some(pa => people(b).some(pb => personMatch(pa, pb)));
-
-        const toAdd = [];
-        let skipped = 0;
-        for (const record of valid) {
-          if (existingIds.has(String(record.recordId)) || toAdd.some(item => String(item.recordId) === String(record.recordId))) {
-            skipped++;
-            continue;
-          }
-          if (existing.some(item => familyMatch(item, record)) || toAdd.some(item => familyMatch(item, record))) {
-            skipped++;
-            continue;
-          }
-          toAdd.push(record);
-        }
+        const preview = await window.apiRequest("/api/families/import", {
+          method:"POST", body:{records:valid, dryRun:true}
+        });
 
         const confirmMessage =
-          `बॅकअप फाईल: ${file.name}\\nफाईलमधील नोंदी: ${valid.length}\\nनवीन जोडल्या जाणाऱ्या नोंदी: ${toAdd.length}\\nआधीपासून असल्याने वगळल्या जाणाऱ्या नोंदी: ${skipped}\\n\\nफक्त नवीन नोंदी जोडल्या जातील. सध्याच्या नोंदी बदलल्या किंवा डिलीट केल्या जाणार नाहीत. पुढे जायचे का?`;
+          `बॅकअप फाईल: ${file.name}\\nफाईलमधील नोंदी: ${preview.total}\\nनवीन जोडल्या जाणाऱ्या नोंदी: ${preview.toAdd}\\nआधीपासून असल्याने वगळल्या जाणाऱ्या नोंदी: ${preview.skipped}\\n\\nफक्त नवीन नोंदी जोडल्या जातील. सध्याच्या नोंदी बदलल्या किंवा डिलीट केल्या जाणार नाहीत. पुढे जायचे का?`;
         if (!confirm(confirmMessage)) {
           status.textContent = "JSON बॅकअप आयात रद्द केली. सध्याची माहिती सुरक्षित आहे.";
           return;
         }
-        if (!toAdd.length) {
-          status.textContent = `नवीन नोंद जोडली नाही. ${skipped} नोंदी आधीपासून असल्याने वगळल्या. सध्याची माहिती सुरक्षित आहे.`;
+        if (!preview.toAdd) {
+          status.textContent = `नवीन नोंद जोडली नाही. ${preview.skipped} नोंदी आधीपासून असल्याने वगळल्या. सध्याची माहिती सुरक्षित आहे.`;
           return;
         }
-        const merged = existing.concat(toAdd);
-        localStorage.setItem(recordsKey, JSON.stringify(merged));
-        renderSavedFamilies();
-        status.textContent = `बॅकअपमधून ${toAdd.length} नवीन कुटुंब नोंदी यशस्वीरीत्या परत आणल्या. ${skipped} आधीच्या / जुळणाऱ्या नोंदी वगळल्या. सध्याच्या नोंदी बदललेल्या नाहीत.`;
+        const result = await window.apiRequest("/api/families/import", {
+          method:"POST", body:{records:valid}
+        });
+        await reloadFamilyRecords("");
+        status.textContent = `बॅकअपमधून ${result.added} नवीन कुटुंब नोंदी सर्व्हरवर जोडल्या. ${result.skipped} आधीच्या / जुळणाऱ्या नोंदी वगळल्या.`;
       } catch (error) {
-        status.textContent = "JSON फाईल वाचता किंवा माहिती साठवता आली नाही. फाईल योग्य आहे का आणि ब्राउझरमध्ये जागा उपलब्ध आहे का ते तपासा. आधीची माहिती बदललेली नाही.";
+        status.textContent = `JSON फाईल तपासता किंवा आयात करता आली नाही: ${error.message}`;
       } finally {
         importFile.value = "";
       }
@@ -1390,11 +1436,12 @@ button{padding:9px 18px;border:0;border-radius:5px;background:#166534;color:#fff
           }
           valid.push(record);
         }
-        // रिकामा तात्पुरता संच; येथे localStorage वापरलेले नाही.
-        const emptyTestRecords = [];
-        const simulatedImportedRecords = emptyTestRecords.concat(valid);
-        const importedCount = simulatedImportedRecords.length;
-        const liveRecords = readRecords();
+        const preview = await window.apiRequest("/api/families/import", {
+          method:"POST", body:{records:valid, dryRun:true}
+        });
+        const importedCount = preview.toAdd;
+        const liveRecords = await window.apiRequest("/api/families");
+        familyRecords = liveRecords;
         const familyKey = r => String(r.recordId || "").trim() ? "id:" + String(r.recordId).trim() : "family:" + norm(r.houseNumber) + "|" + norm(r.familyHead);
         const backupMap = new Map(valid.map(r => [familyKey(r), r]));
         const liveMap = new Map(liveRecords.map(r => [familyKey(r), r]));
@@ -1413,7 +1460,7 @@ button{padding:9px 18px;border:0;border-radius:5px;background:#166534;color:#fff
         for (const [key, record] of liveMap) if (!backupMap.has(key)) liveOnly.push(record);
         const listRows = valid.map((r,i) => `<tr><td>${i+1}</td><td>${esc(r.houseNumber)}</td><td>${esc(r.familyHead)}</td><td>${memberCount(r)}</td></tr>`).join("");
         const names = records => records.map(r => `${esc(r.houseNumber)} – ${esc(r.familyHead)} (${memberCount(r)} सदस्य)`).join("<br>");
-        summary.innerHTML = `<div style="padding:12px;background:#fff;border:1px solid #ddd6fe;border-radius:8px;line-height:1.8"><strong>फाईल:</strong> ${esc(file.name)}<br><strong>१. JSON मधील नोंदी:</strong> ${valid.length}<br><strong>२. रिकाम्या चाचणी संचात यशस्वी आयात:</strong> ${importedCount} पैकी ${importedCount} नोंदी. <span style="color:#15803d;font-weight:700">चाचणी यशस्वी</span><br><strong>३. कुटुंबांची यादी:</strong> खालील तक्त्यात नावे व सदस्यसंख्या दिली आहे.<br><strong>४. वेबसाइटशी तुलना:</strong> पूर्ण जुळणाऱ्या ${exact.length}, माहिती वेगळी असलेल्या ${different.length}, वेबसाइटमध्ये नसलेल्या ${backupOnly.length}, बॅकअपमध्ये नसलेल्या ${liveOnly.length}.</div>`;
+        summary.innerHTML = `<div style="padding:12px;background:#fff;border:1px solid #ddd6fe;border-radius:8px;line-height:1.8"><strong>फाईल:</strong> ${esc(file.name)}<br><strong>१. JSON मधील नोंदी:</strong> ${preview.total}<br><strong>२. सर्व्हरच्या dry-run तपासणीत नवीन जोडता येणाऱ्या नोंदी:</strong> ${importedCount}<br><strong>३. आधीपासून असल्याने वगळल्या जाणाऱ्या नोंदी:</strong> ${preview.skipped}<br><strong>४. कुटुंबांची यादी:</strong> खालील तक्त्यात नावे व सदस्यसंख्या दिली आहे.<br><strong>५. वेबसाइटशी तुलना:</strong> पूर्ण जुळणाऱ्या ${exact.length}, माहिती वेगळी असलेल्या ${different.length}, वेबसाइटमध्ये नसलेल्या ${backupOnly.length}, बॅकअपमध्ये नसलेल्या ${liveOnly.length}.</div>`;
         let compareHtml = "";
         if (different.length) compareHtml += `<h3>माहिती वेगळी असलेली कुटुंबे</h3><p>${different.map(x=>`${esc(x.backup.houseNumber)} – ${esc(x.backup.familyHead)} (बॅकअप: ${memberCount(x.backup)} सदस्य; वेबसाइट: ${memberCount(x.live)} सदस्य)`).join("<br>")}</p>`;
         if (backupOnly.length) compareHtml += `<h3>बॅकअपमध्ये आहेत; वेबसाइटमध्ये नाहीत</h3><p>${names(backupOnly)}</p>`;
@@ -1426,8 +1473,15 @@ button{padding:9px 18px;border:0;border-radius:5px;background:#166534;color:#fff
       } finally { checkJsonFile.value = ""; }
     });
 
-    document.getElementById("exportFamilySurveyCSV")?.addEventListener("click", () => {
-      const records = readRecords();
+    document.getElementById("exportFamilySurveyCSV")?.addEventListener("click", async () => {
+      let records;
+      try {
+        records = await window.apiRequest("/api/families");
+        familyRecords = records;
+      } catch (error) {
+        status.textContent = `CSV तयार करण्यासाठी कुटुंब नोंदी मिळाल्या नाहीत: ${error.message}`;
+        return;
+      }
       const headers = ["कुटुंब प्रमुखाचे नाव", "घर क्रमांक", "कुटुंबातील एकूण सदस्य", "गावविकासासाठी सूचना", "सदस्य क्रमांक", "सदस्याचे पूर्ण नाव", "नाते", "जन्मतारीख", "वय (वर्षे)", "शैक्षणिक पात्रता / सामान्य शिक्षण", "व्यावसायिक पात्रता", "व्यवसाय / काम", "इतर व्यवसाय", "मोबाईल क्रमांक", "शाळा कुठे आहे", "विद्यार्थी असल्यास इयत्ता"];
       const rows = [headers];
       const csvSafe = (value, forceText = false) => {
@@ -1467,17 +1521,63 @@ button{padding:9px 18px;border:0;border-radius:5px;background:#166534;color:#fff
     document.getElementById("clearFamilySurvey")?.addEventListener("click", () => {
       if (!confirm("फॉर्ममधील भरलेली माहिती रिकामी करायची आहे का?")) return;
       document.querySelectorAll("#survey input, #survey select, #survey textarea").forEach(el => { if (el.id !== "familyCount") el.value = ""; });
+      localStorage.removeItem(draftKey);
       countInput.value = "";
       editingRecordId = null;
+      baseSavedAt = null;
       const saveButton = document.getElementById("saveFamilySurvey");
       if (saveButton) saveButton.textContent = "नवीन कुटुंबाची नोंद जतन करा";
       setEditMode(false);
       render(); status.textContent = "फॉर्म रिकामा केला आहे. नवीन नोंद तयार आहे.";
     });
-    try {
-      const draft = JSON.parse(localStorage.getItem("keketUmraFamilySurveyDraftStage25V1") || "null");
-      if (draft) restoreDraftForEdit(draft, false);
-    } catch (e) { /* ignore an invalid local draft */ }
+    let loadedForSession = false;
+    const surveyWorkspace = document.getElementById("surveyWorkspace");
+    const saveDraft = () => {
+      if (!window.currentUser || !surveyWorkspace) return;
+      const draft = collectSurvey();
+      if (editingRecordId) {
+        draft.recordId = editingRecordId;
+        draft.baseSavedAt = baseSavedAt;
+      }
+      try {
+        localStorage.setItem(draftKey, JSON.stringify(draft));
+      } catch (error) {
+        status.textContent = `न जतन केलेला मसुदा ब्राउझरमध्ये साठवता आला नाही: ${error.message}`;
+      }
+    };
+    surveyWorkspace?.addEventListener("input", saveDraft);
+    surveyWorkspace?.addEventListener("change", saveDraft);
+    window.familySurvey = {
+      async load() {
+        if (!window.currentUser) return;
+        const loaded = await reloadFamilyRecords("");
+        if (!loaded) return;
+        if (loadedForSession) return;
+        try {
+          const draft = JSON.parse(localStorage.getItem(draftKey) || "null");
+          const matchingRecord = draft?.recordId && familyRecords.find(item => item.recordId === draft.recordId);
+          if (matchingRecord && draft.savedAt === matchingRecord.savedAt) {
+            localStorage.removeItem(draftKey);
+          } else if (draft) {
+            restoreDraftForEdit(draft, false);
+          }
+          loadedForSession = true;
+        } catch (error) {
+          status.textContent = `ब्राउझरमधील मसुदा वाचता आला नाही: ${error.message}`;
+        }
+      },
+      clear() {
+        recordsRequest++;
+        familyRecords = [];
+        editingRecordId = null;
+        baseSavedAt = null;
+        loadedForSession = false;
+        surveyWorkspace?.querySelectorAll("input, select, textarea").forEach(el => { el.value = ""; });
+        countInput.value = "";
+        render();
+        renderSavedFamilies(false);
+      }
+    };
   })();
   </script>
 
@@ -1494,131 +1594,6 @@ button{padding:9px 18px;border:0;border-radius:5px;background:#166534;color:#fff
 #suggestions textarea,#workers textarea,#ratings textarea{width:100%;box-sizing:border-box}
 </style>
 
-<script id="stage25-features">
-(function(){[["keketUmraFamilyRecordsV1","keketUmraFamilyRecordsStage25V1"],["keketUmraFamilySurveyDraft","keketUmraFamilySurveyDraftStage25V1"],["keketUmraVillageSuggestionsV1","keketUmraVillageSuggestionsStage25V1"],["keketUmraSkilledWorkersV1","keketUmraSkilledWorkersStage25V1"],["keketUmraWorkerRatingsV1","keketUmraWorkerRatingsStage25V1"]].forEach(([a,b])=>{if(localStorage.getItem(b)===null&&localStorage.getItem(a)!==null)localStorage.setItem(b,localStorage.getItem(a));});})();
-(function(){
- const KEYS={suggestions:"keketUmraVillageSuggestionsStage25V1",workers:"keketUmraSkilledWorkersStage25V1",ratings:"keketUmraWorkerRatingsStage25V1"};
- const $=id=>document.getElementById(id);
- const read=key=>{try{const v=JSON.parse(localStorage.getItem(key)||"[]");return Array.isArray(v)?v:[]}catch(e){return[]}};
- const write=(key,data)=>localStorage.setItem(key,JSON.stringify(data));
- const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
- const id=()=> "r"+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
- function renderSuggestions(){
-   const host=$("publicSuggestions"); if(!host)return;
-   const rows=read(KEYS.suggestions).filter(x=>x.status==="approved");
-   host.innerHTML=rows.length?rows.map(x=>`<article class="public-profile"><b>${esc(x.category)}</b><p>${esc(x.text)}</p>${x.publicName&&x.name?`<small>सूचना देणारे: ${esc(x.name)}</small>`:""}</article>`).join(""):'<p class="small-muted">अद्याप सार्वजनिक करण्यासाठी मंजूर सूचना नाहीत.</p>';
- }
- function renderWorkers(){
-   const host=$("publicWorkerDirectory"),search=($("workerSearch")?.value||"").trim().toLocaleLowerCase("mr");
-   if(!host)return;
-   const workers=read(KEYS.workers).filter(x=>x.status==="approved").filter(x=>(x.name+" "+x.skill+" "+x.area).toLocaleLowerCase("mr").includes(search));
-   const ratings=read(KEYS.ratings);
-   host.innerHTML=workers.length?workers.map(w=>{
-     const rs=ratings.filter(r=>r.workerId===w.id&&r.status==="approved"),avg=rs.length?(rs.reduce((a,b)=>a+b.stars,0)/rs.length).toFixed(1):"रेटिंग नाही";
-     return `<article class="public-profile"><h3>${esc(w.name)}</h3><b>${esc(w.skill)}</b><p>अनुभव: ${esc(w.experience)} वर्षे · ${esc(w.availability)}</p><p>${esc(w.description||"")}</p><p>सेवा क्षेत्र: ${esc(w.area)}</p><p class="stars">★ ${avg} (${rs.length} अभिप्राय)</p><p>संपर्क: ${esc(w.phone)}</p></article>`;
-   }).join(""):'<p class="small-muted">शोधाशी जुळणारे मंजूर कामगार सापडले नाहीत.</p>';
-   const select=$("ratingWorker");if(select){const val=select.value;select.innerHTML='<option value="">मंजूर कामगार निवडा</option>'+workers.map(w=>`<option value="${esc(w.id)}">${esc(w.name)} — ${esc(w.skill)}</option>`).join("");if(workers.some(w=>w.id===val))select.value=val;}
-   renderRatingSummary();
- }
- function renderRatingSummary(){
-   const host=$("workerRatingSummary");if(!host)return;
-   const approved=read(KEYS.ratings).filter(r=>r.status==="approved"),workers=read(KEYS.workers).filter(w=>w.status==="approved");
-   host.innerHTML=workers.length?workers.map(w=>{const rs=approved.filter(r=>r.workerId===w.id),avg=rs.length?(rs.reduce((a,b)=>a+b.stars,0)/rs.length).toFixed(1):"रेटिंग नाही";return `<p><b>${esc(w.name)}</b> — ${esc(w.skill)} · <span class="stars">★ ${avg}</span> (${rs.length})</p>`}).join(""):'<p class="small-muted">मंजूर कामगार उपलब्ध नाहीत.</p>';
- }
-
- function renderAdminQueue(){
-   const host=$("stage23PendingQueue");if(!host)return;
-   const groups=[["सूचना",KEYS.suggestions],["कामगार",KEYS.workers],["रेटिंग",KEYS.ratings]];
-   let markup="";
-   groups.forEach(([label,key])=>read(key).filter(x=>x.status==="pending").forEach(x=>{
-     const detail=label==="सूचना"?`${esc(x.category)} — ${esc(x.text)}`:label==="कामगार"?`${esc(x.name)} — ${esc(x.skill)} — ${esc(x.phone)}`:`${esc(x.stars)} स्टार — ${esc(x.feedback||"अभिप्राय नाही")}`;
-     markup+=`<article class="public-profile" style="margin:10px 0"><b>${label}</b><p>${detail}</p><button type="button" class="button button-primary" data-stage23-action="approve" data-stage23-key="${key}" data-stage23-id="${esc(x.id)}">मंजूर करा</button> <button type="button" class="button" data-stage23-action="reject" data-stage23-key="${key}" data-stage23-id="${esc(x.id)}">नाकारून हटवा</button></article>`;
-   }));
-   host.innerHTML=markup||'<p class="small-muted">प्रलंबित नोंदी नाहीत.</p>';
- }
- $("stage23PendingQueue")?.addEventListener("click",e=>{
-   const btn=e.target.closest("button[data-stage23-action]");if(!btn)return;
-   const key=btn.dataset.stage23Key,recordId=btn.dataset.stage23Id,rows=read(key),item=rows.find(x=>x.id===recordId);if(!item)return;
-   if(btn.dataset.stage23Action==="approve"){item.status="approved";write(key,rows);}
-   else{write(key,rows.filter(x=>x.id!==recordId));}
-   renderAdminQueue();renderSuggestions();renderWorkers();
- });
- $("villageSuggestionForm")?.addEventListener("submit",e=>{
-   e.preventDefault();const text=$("suggestionText").value.trim();if(!text)return;
-   const consent=$("suggestionConsent").checked;
-   const phone=$("suggestionContact").value.trim();
-   if(phone&&!/^\d{10}$/.test(phone)){ $("suggestionStatus").textContent="मोबाईल क्रमांक १० अंकी असावा.";return;}
-   const rows=read(KEYS.suggestions);rows.push({id:id(),category:$("suggestionCategory").value,text,name:consent? $("suggestionName").value.trim():"",phone:consent?phone:"",publicName:consent,status:"pending",createdAt:new Date().toISOString()});write(KEYS.suggestions,rows);
-   e.target.reset();$("suggestionStatus").textContent="सूचना चाचणी ब्राउझरमध्ये जतन झाली. प्रशासकीय मंजुरीनंतर सार्वजनिक होईल.";
- });
- $("workerRegistrationForm")?.addEventListener("submit",e=>{
-   e.preventDefault();const phone=$("workerPhone").value.trim();if(!/^\d{10}$/.test(phone)){ $("workerStatus").textContent="मोबाईल क्रमांक १० अंकी असावा.";return;}
-   const rows=read(KEYS.workers);rows.push({id:id(),name:$("workerName").value.trim(),skill:$("workerSkill").value==="इतर"?$("workerOtherSkill").value.trim():$("workerSkill").value,experience:Number($("workerExperience").value),availability:$("workerAvailability").value,area:$("workerArea").value.trim(),description:$("workerDescription").value.trim(),phone,contactConsent:$("workerPublicContact").checked,status:"pending",createdAt:new Date().toISOString()});write(KEYS.workers,rows);
-   e.target.reset();$("workerArea").value="केकत उमरा";$("workerStatus").textContent="नोंदणी चाचणी ब्राउझरमध्ये जतन झाली. मंजुरीपूर्वी सार्वजनिक होणार नाही.";
- });
- $("workerRatingForm")?.addEventListener("submit",e=>{
-   e.preventDefault();const workerId=$("ratingWorker").value,stars=Number(document.querySelector('input[name="workerStars"]:checked')?.value||0);
-   if(!workerId||stars<1||stars>5){$("ratingStatus").textContent="कामगार आणि १ ते ५ स्टार रेटिंग निवडा.";return;}
-   const rows=read(KEYS.ratings);rows.push({id:id(),workerId,stars,feedback:$("ratingFeedback").value.trim(),status:"pending",createdAt:new Date().toISOString()});write(KEYS.ratings,rows);
-   e.target.reset();$("ratingStatus").textContent="रेटिंग चाचणी ब्राउझरमध्ये जतन झाली. तपासणीनंतरच सार्वजनिक सरासरीत मोजली जाईल.";
- });
- $("workerSearch")?.addEventListener("input",renderWorkers);
- renderSuggestions();renderWorkers();renderAdminQueue();
-})();
-</script>
-
-  <script>
-const navButtons = document.querySelectorAll('[data-page]');
-const pages = document.querySelectorAll('.page');
-const mainNav = document.getElementById('mainNav');
-const menuToggle = document.getElementById('menuToggle');
-function showPage(pageId) {
-  const target = document.getElementById(pageId);
-  if (!target || !target.classList.contains('page')) return;
-  pages.forEach(page => page.classList.toggle('active', page === target));
-  navButtons.forEach(button => button.classList.toggle('active', button.dataset.page === pageId));
-  mainNav?.classList.remove('open');
-  menuToggle?.setAttribute('aria-expanded', 'false');
-  window.scrollTo({top: 0, behavior: 'smooth'});
-  if (pageId === 'skills') renderSkills();
-}
-// Delegated handling also covers buttons rendered later by the कौशल्य सेतू search.
-document.addEventListener('click', event => {
-  const pageButton = event.target.closest('[data-page]');
-  const gotoButton = event.target.closest('[data-goto]');
-  if (pageButton) { event.preventDefault(); showPage(pageButton.dataset.page); return; }
-  if (gotoButton) { event.preventDefault(); showPage(gotoButton.dataset.goto); }
-});
-menuToggle?.addEventListener('click', () => {
-  const open = mainNav?.classList.toggle('open') || false;
-  menuToggle.setAttribute('aria-expanded', String(open));
-});
-const skillSearch = document.getElementById('skillSearch');
-const skillCategory = document.getElementById('skillCategory');
-const skillResults = document.getElementById('skillResults');
-function esc(v) { return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-function renderSkills() {
-  if (!skillResults) return;
-  const query = (skillSearch?.value || '').trim().toLocaleLowerCase('mr');
-  const category = skillCategory?.value || '';
-  let all = [];
-  try { const saved = JSON.parse(localStorage.getItem('keketUmraSkilledWorkersStage25V1') || '[]'); if (Array.isArray(saved)) all = saved; } catch (_) {}
-  const rows = all.filter(w => w.status === 'approved' && w.contactConsent)
-    .filter(w => (!category || (w.skill || '').includes(category)) &&
-      (!query || (w.name + ' ' + w.skill + ' ' + w.area + ' ' + w.description).toLocaleLowerCase('mr').includes(query)));
-  skillResults.innerHTML = rows.length ? rows.map(w => `<article class="panel"><div class="service-icon">🛠️</div><h3>${esc(w.name)}</h3><b>${esc(w.skill)}</b><p>अनुभव: ${esc(w.experience)} वर्षे · ${esc(w.availability)}</p><p>${esc(w.description || '')}</p><p>सेवा क्षेत्र: ${esc(w.area)}</p><p><a href="tel:${esc(w.phone)}">संपर्क: ${esc(w.phone)}</a></p><button class="button button-light" data-goto="ratings">रेटिंग द्या</button></article>`).join('') : '<article class="panel"><h3>जुळणारे मंजूर प्रोफाइल नाही</h3><p>श्रेणी किंवा शब्द बदलून पाहा. तपासणी व मंजुरीनंतर नोंदणी येथे दिसेल.</p><button class="button button-primary" data-goto="workers">नोंदणी करा</button></article>';
-}
-document.getElementById('skillSearchBtn')?.addEventListener('click', renderSkills);
-skillSearch?.addEventListener('input', renderSkills);
-skillSearch?.addEventListener('keydown', event => { if (event.key === 'Enter') renderSkills(); });
-skillCategory?.addEventListener('change', renderSkills);
-window.addEventListener('stage25skillschange', renderSkills);
-renderSkills();
-</script>
+<script src="/app.js"></script>
 </body>
 </html>
-
-
-
-
-
