@@ -1,0 +1,14 @@
+{
+  "name": "kekatumra-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Backend API for the Kekatumra village website (SQLite, no npm dependencies)",
+  "type": "module",
+  "engines": { "node": ">=22.13" },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning server.js",
+    "test": "node --disable-warning=ExperimentalWarning --test \"test/*.test.js\"",
+    "create-admin": "node --disable-warning=ExperimentalWarning scripts/create-admin.js",
+    "backup": "node --disable-warning=ExperimentalWarning scripts/backup.js"
+  }
+}
