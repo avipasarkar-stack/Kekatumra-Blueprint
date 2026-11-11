@@ -7,8 +7,6 @@ const server = createApp({ db, config });
 
 server.listen(config.port, config.host, () => {
   console.log(`Kekatumra backend listening on http://${config.host}:${config.port}`);
-  const admins = db.prepare("SELECT COUNT(*) AS n FROM users WHERE role='admin'").get().n;
-  if (!admins) console.log('No admin exists yet. Run: npm run create-admin -- <username>');
 });
 
 for (const sig of ['SIGINT', 'SIGTERM']) {

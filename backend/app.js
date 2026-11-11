@@ -3,15 +3,12 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { tx } from './lib/db.js';
-import {
-  hashPassword, verifyPassword, DUMMY_HASH, newToken, sha256, passwordProblem, createLimiter,
-} from './lib/auth.js';
+import { createLimiter } from './lib/rate-limit.js';
 import { HttpError, bad, str, phone10, int, bool, obj } from './lib/validate.js';
 import {
   sanitizeRecord, validateFamily, checkDuplicates, familyMatch, genderStats, clampCount, searchNorm,
 } from './lib/families.js';
 
-const COOKIE = 'kum_session';
 const DEFAULT_BODY_LIMIT = 256 * 1024;
 const IMPORT_BODY_LIMIT = 10 * 1024 * 1024;
 const MIME = {
@@ -34,14 +31,13 @@ export function createApp({ db, config }) {
 
   const limiters = {
     api: createLimiter({ max: 600, windowMs: 60_000 }),
-    login: createLimiter({ max: 10, windowMs: 15 * 60_000 }),
     submit: createLimiter({ max: config.submitLimitPerHour, windowMs: 60 * 60_000 }),
   };
 
   // ---------- small helpers ----------
-  const audit = (user, action, target = null, detail = null) =>
-    db.prepare('INSERT INTO audit_log(at,user_id,username,action,target,detail) VALUES (?,?,?,?,?,?)')
-      .run(nowIso(), user?.id ?? null, user?.username ?? null, action, target, detail);
+  const audit = (action, target = null, detail = null) =>
+    db.prepare('INSERT INTO audit_log(at,action,target,detail) VALUES (?,?,?,?)')
+      .run(nowIso(), action, target, detail);
 
   const clientIp = (req) => {
     if (config.trustProxy) {
@@ -50,26 +46,6 @@ export function createApp({ db, config }) {
     }
     return req.socket.remoteAddress || 'unknown';
   };
-
-  const parseCookies = (header = '') => Object.fromEntries(
-    header.split(';').map((c) => c.trim()).filter(Boolean).map((c) => {
-      const i = c.indexOf('=');
-      return [c.slice(0, i), c.slice(i + 1)];
-    }),
-  );
-
-  const sessionCookie = (value, maxAgeSec) =>
-    `${COOKIE}=${value}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${maxAgeSec}${config.cookieSecure ? '; Secure' : ''}`;
-
-  function currentUser(req) {
-    const token = parseCookies(req.headers.cookie)[COOKIE];
-    if (!token) return null;
-    const row = db.prepare(
-      `SELECT u.id, u.username, u.role FROM sessions s JOIN users u ON u.id = s.user_id
-       WHERE s.token_hash = ? AND s.expires_at > ?`,
-    ).get(sha256(token), nowIso());
-    return row ? { ...row, tokenHash: sha256(token) } : null;
-  }
 
   function securityHeaders(res) {
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -81,7 +57,7 @@ export function createApp({ db, config }) {
     res.setHeader('Content-Security-Policy',
       "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
       "font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
-    if (config.cookieSecure) res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
+    if (config.production) res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
   }
 
   function send(res, status, body, headers = {}) {
@@ -188,12 +164,6 @@ export function createApp({ db, config }) {
       if (m.methodNotAllowed) throw new HttpError(405, 'method_not_allowed', 'Method not allowed.');
       const { route: r, params } = m;
 
-      const user = currentUser(req);
-      if (r.opts.auth === 'user' || r.opts.auth === 'admin') {
-        if (!user) throw new HttpError(401, 'unauthorized', 'Login required.');
-        if (r.opts.auth === 'admin' && user.role !== 'admin') throw new HttpError(403, 'forbidden', 'Admin only.');
-      }
-
       let body;
       if (unsafe) {
         const raw = await readBody(req, r.opts.bodyLimit || DEFAULT_BODY_LIMIT);
@@ -206,7 +176,7 @@ export function createApp({ db, config }) {
       }
 
       const result = await r.handler({
-        req, res, user, params, body, ip,
+        req, res, params, body, ip,
         query: Object.fromEntries(url.searchParams),
       });
       if (result instanceof Reply) return send(res, result.status, result.body, result.headers);
@@ -229,10 +199,10 @@ export function createApp({ db, config }) {
   // =====================================================================
   // Public endpoints
   // =====================================================================
-  route('GET', '/api/health', { auth: 'none' }, () => ({ ok: true, time: nowIso() }));
+  route('GET', '/api/health', {}, () => ({ ok: true, time: nowIso() }));
 
   // ---- suggestions ----
-  route('GET', '/api/suggestions', { auth: 'none' }, () => {
+  route('GET', '/api/suggestions', {}, () => {
     const rows = db.prepare("SELECT * FROM suggestions WHERE status='approved' ORDER BY created_at DESC").all();
     return rows.map((x) => ({
       id: x.id, category: x.category, text: x.text, createdAt: x.created_at,
@@ -241,7 +211,7 @@ export function createApp({ db, config }) {
   });
 
   const guardSuggest = submitGuard('suggestions');
-  route('POST', '/api/suggestions', { auth: 'none' }, ({ body, ip }) => {
+  route('POST', '/api/suggestions', {}, ({ body, ip }) => {
     guardSuggest(ip);
     const b = obj(body);
     const consent = bool(b.consent);
@@ -264,7 +234,7 @@ export function createApp({ db, config }) {
     ratingCount: w.rc,
   });
 
-  route('GET', '/api/workers', { auth: 'none' }, ({ query }) => {
+  route('GET', '/api/workers', {}, ({ query }) => {
     const q = String(query.search || '').trim().slice(0, 100).toLocaleLowerCase('mr');
     const skill = String(query.skill || '').trim().slice(0, 100);
     const onlyContact = query.contact === '1';
@@ -282,7 +252,7 @@ export function createApp({ db, config }) {
   });
 
   const guardWorker = submitGuard('workers');
-  route('POST', '/api/workers', { auth: 'none' }, ({ body, ip }) => {
+  route('POST', '/api/workers', {}, ({ body, ip }) => {
     guardWorker(ip);
     const b = obj(body);
     const w = {
@@ -303,7 +273,7 @@ export function createApp({ db, config }) {
 
   // ---- ratings ----
   const guardRating = submitGuard('ratings');
-  route('POST', '/api/ratings', { auth: 'none' }, ({ body, ip }) => {
+  route('POST', '/api/ratings', {}, ({ body, ip }) => {
     guardRating(ip);
     const b = obj(body);
     const workerId = str(b.workerId, { field: 'workerId', max: 64, required: true });
@@ -317,55 +287,9 @@ export function createApp({ db, config }) {
   });
 
   // =====================================================================
-  // Auth
+  // Public approval queue and actions
   // =====================================================================
-  route('POST', '/api/auth/login', { auth: 'none' }, async ({ body, ip }) => {
-    const l = limiters.login.hit(ip);
-    if (!l.ok) throw new HttpError(429, 'rate_limited', 'Too many login attempts. Try later.', { retryAfter: l.retryAfter });
-    const b = obj(body);
-    const username = str(b.username, { field: 'username', max: 64, required: true }).toLowerCase();
-    const password = str(b.password, { field: 'password', max: 200, required: true });
-    const user = db.prepare('SELECT * FROM users WHERE username=?').get(username);
-
-    if (user?.locked_until && user.locked_until > nowIso()) {
-      throw new HttpError(429, 'account_locked', 'Account temporarily locked after repeated failures. Try again later.');
-    }
-    const ok = await verifyPassword(password, user ? user.password_hash : DUMMY_HASH);
-    if (!user || !ok) {
-      if (user) {
-        const failed = user.failed_logins + 1;
-        if (failed >= 5) {
-          db.prepare('UPDATE users SET failed_logins=0, locked_until=? WHERE id=?')
-            .run(new Date(Date.now() + 15 * 60_000).toISOString(), user.id);
-        } else {
-          db.prepare('UPDATE users SET failed_logins=? WHERE id=?').run(failed, user.id);
-        }
-      }
-      audit(null, 'login_failed', username);
-      throw new HttpError(401, 'invalid_credentials', 'Wrong username or password.');
-    }
-    db.prepare('UPDATE users SET failed_logins=0, locked_until=NULL WHERE id=?').run(user.id);
-    db.prepare('DELETE FROM sessions WHERE expires_at <= ?').run(nowIso());
-    const token = newToken();
-    const maxAge = Math.round(config.sessionHours * 3600);
-    db.prepare('INSERT INTO sessions(token_hash,user_id,expires_at,created_at) VALUES (?,?,?,?)')
-      .run(sha256(token), user.id, new Date(Date.now() + maxAge * 1000).toISOString(), nowIso());
-    audit(user, 'login');
-    return new Reply(200, { user: { username: user.username, role: user.role } }, { 'Set-Cookie': sessionCookie(token, maxAge) });
-  });
-
-  route('POST', '/api/auth/logout', { auth: 'none' }, ({ req }) => {
-    const token = parseCookies(req.headers.cookie)[COOKIE];
-    if (token) db.prepare('DELETE FROM sessions WHERE token_hash=?').run(sha256(token));
-    return new Reply(200, { ok: true }, { 'Set-Cookie': sessionCookie('', 0) });
-  });
-
-  route('GET', '/api/auth/me', { auth: 'user' }, ({ user }) => ({ user: { username: user.username, role: user.role } }));
-
-  // =====================================================================
-  // Admin: approval queue, users, audit log
-  // =====================================================================
-  route('GET', '/api/admin/pending', { auth: 'admin' }, () => {
+  route('GET', '/api/admin/pending', {}, () => {
     const q = (t) => db.prepare(`SELECT * FROM ${queueTable(t)} WHERE status='pending' ORDER BY created_at ASC`).all();
     return {
       suggestions: q('suggestions').map((x) => ({
@@ -382,65 +306,28 @@ export function createApp({ db, config }) {
     };
   });
 
-  route('POST', '/api/admin/queue/:kind/:id/approve', { auth: 'admin' }, ({ params, user }) => {
+  route('POST', '/api/admin/queue/:kind/:id/approve', {}, ({ params }) => {
     const table = queueTable(params.kind);
     if (!table) throw new HttpError(404, 'not_found', 'Unknown item type.');
-    const r = db.prepare(`UPDATE ${table} SET status='approved', reviewed_by=?, reviewed_at=? WHERE id=? AND status='pending'`)
-      .run(user.id, nowIso(), params.id);
+    const r = db.prepare(`UPDATE ${table} SET status='approved', reviewed_at=? WHERE id=? AND status='pending'`)
+      .run(nowIso(), params.id);
     if (!r.changes) throw new HttpError(404, 'not_found', 'No pending item with that id.');
-    audit(user, `approve_${params.kind}`, params.id);
+    audit(`approve_${params.kind}`, params.id);
     return { ok: true };
   });
 
   // "Reject" deletes the item (same as the current "नाकारून हटवा" button). Also removes approved items.
-  route('DELETE', '/api/admin/queue/:kind/:id', { auth: 'admin' }, ({ params, user }) => {
+  route('DELETE', '/api/admin/queue/:kind/:id', {}, ({ params }) => {
     const table = queueTable(params.kind);
     if (!table) throw new HttpError(404, 'not_found', 'Unknown item type.');
     const r = db.prepare(`DELETE FROM ${table} WHERE id=?`).run(params.id);
     if (!r.changes) throw new HttpError(404, 'not_found', 'No item with that id.');
-    audit(user, `delete_${params.kind}`, params.id);
-    return { ok: true };
-  });
-
-  route('GET', '/api/admin/audit', { auth: 'admin' }, ({ query }) => {
-    const limit = Math.min(500, Math.max(1, parseInt(query.limit, 10) || 100));
-    return db.prepare('SELECT * FROM audit_log ORDER BY id DESC LIMIT ?').all(limit);
-  });
-
-  route('GET', '/api/admin/users', { auth: 'admin' }, () =>
-    db.prepare('SELECT id, username, role, created_at AS createdAt FROM users ORDER BY id').all());
-
-  route('POST', '/api/admin/users', { auth: 'admin' }, async ({ body, user }) => {
-    const b = obj(body);
-    const username = str(b.username, { field: 'username', max: 32, required: true }).toLowerCase();
-    if (!/^[a-z0-9._-]{3,32}$/.test(username)) throw bad('invalid_username', 'Username: 3-32 letters, digits, . _ -');
-    const role = str(b.role, { field: 'role', max: 20, required: true });
-    if (!['admin', 'surveyor'].includes(role)) throw bad('invalid_role', 'role must be admin or surveyor.');
-    const problem = passwordProblem(b.password);
-    if (problem) throw bad('weak_password', problem);
-    const hash = await hashPassword(b.password);
-    try {
-      db.prepare('INSERT INTO users(username,password_hash,role,created_at) VALUES (?,?,?,?)').run(username, hash, role, nowIso());
-    } catch (e) {
-      if (String(e.message).includes('UNIQUE')) throw new HttpError(409, 'username_taken', 'That username already exists.');
-      throw e;
-    }
-    audit(user, 'create_user', username, role);
-    return new Reply(201, { ok: true });
-  });
-
-  route('DELETE', '/api/admin/users/:id', { auth: 'admin' }, ({ params, user }) => {
-    const id = Number(params.id);
-    if (id === user.id) throw bad('cannot_delete_self', 'You cannot delete your own account.');
-    const target = db.prepare('SELECT username FROM users WHERE id=?').get(id);
-    if (!target) throw new HttpError(404, 'not_found', 'No such user.');
-    db.prepare('DELETE FROM users WHERE id=?').run(id); // sessions are removed by ON DELETE CASCADE
-    audit(user, 'delete_user', target.username);
+    audit(`delete_${params.kind}`, params.id);
     return { ok: true };
   });
 
   // =====================================================================
-  // Family survey (login required: admin or surveyor)
+  // Public family survey
   // =====================================================================
   const toRecord = (row) => ({
     ...JSON.parse(row.data),
@@ -448,7 +335,7 @@ export function createApp({ db, config }) {
   });
   const allRows = () => db.prepare('SELECT * FROM families ORDER BY created_at DESC, rowid DESC').all();
 
-  route('GET', '/api/families', { auth: 'user' }, ({ query }) => {
+  route('GET', '/api/families', {}, ({ query }) => {
     const q = searchNorm(String(query.q || '').slice(0, 100));
     const records = allRows().map(toRecord);
     if (!q) return records;
@@ -459,23 +346,23 @@ export function createApp({ db, config }) {
     });
   });
 
-  route('GET', '/api/families/stats', { auth: 'user' }, () => genderStats(allRows().map(toRecord)));
+  route('GET', '/api/families/stats', {}, () => genderStats(allRows().map(toRecord)));
 
-  route('GET', '/api/families/export', { auth: 'admin' }, ({ user }) => {
-    audit(user, 'export_families');
+  route('GET', '/api/families/export', {}, () => {
+    audit('export_families');
     const date = nowIso().slice(0, 10);
     return new Reply(200,
       { backupType: 'keketUmraFamilyRecordsV1', exportedAt: nowIso(), records: allRows().map(toRecord) },
       { 'Content-Disposition': `attachment; filename="keket_umra_survey_backup_${date}.json"` });
   });
 
-  route('GET', '/api/families/:id', { auth: 'user' }, ({ params }) => {
+  route('GET', '/api/families/:id', {}, ({ params }) => {
     const row = db.prepare('SELECT * FROM families WHERE record_id=?').get(params.id);
     if (!row) throw new HttpError(404, 'not_found', 'Family record not found.');
     return toRecord(row);
   });
 
-  function saveFamily({ user, body, existingId }) {
+  function saveFamily({ body, existingId }) {
     const b = obj(body);
     const input = sanitizeRecord(b.record);
     let previous = null, previousRow = null;
@@ -500,29 +387,29 @@ export function createApp({ db, config }) {
     if (existingId) {
       db.prepare('UPDATE families SET house_number=?, family_head=?, family_count=?, data=?, updated_at=? WHERE record_id=?')
         .run(data.houseNumber, data.familyHead, clampCount(data.familyCount), json, now, existingId);
-      audit(user, 'update_family', existingId);
+      audit('update_family', existingId);
       return toRecord(db.prepare('SELECT * FROM families WHERE record_id=?').get(existingId));
     }
     const id = `KUM-${Date.now().toString(36)}-${crypto.randomBytes(4).toString('hex')}`;
-    db.prepare(`INSERT INTO families(record_id,house_number,family_head,family_count,data,created_by,created_at,updated_at)
-                VALUES (?,?,?,?,?,?,?,?)`)
-      .run(id, data.houseNumber, data.familyHead, clampCount(data.familyCount), json, user.id, now, now);
-    audit(user, 'create_family', id);
+    db.prepare(`INSERT INTO families(record_id,house_number,family_head,family_count,data,created_at,updated_at)
+                VALUES (?,?,?,?,?,?,?)`)
+    .run(id, data.houseNumber, data.familyHead, clampCount(data.familyCount), json, now, now);
+    audit('create_family', id);
     return toRecord(db.prepare('SELECT * FROM families WHERE record_id=?').get(id));
   }
 
-  route('POST', '/api/families', { auth: 'user' }, (ctx) => new Reply(201, saveFamily({ ...ctx, existingId: null })));
-  route('PUT', '/api/families/:id', { auth: 'user' }, (ctx) => saveFamily({ ...ctx, existingId: ctx.params.id }));
+  route('POST', '/api/families', {}, (ctx) => new Reply(201, saveFamily({ ...ctx, existingId: null })));
+  route('PUT', '/api/families/:id', {}, (ctx) => saveFamily({ ...ctx, existingId: ctx.params.id }));
 
-  route('DELETE', '/api/families/:id', { auth: 'admin' }, ({ params, user }) => {
+  route('DELETE', '/api/families/:id', {}, ({ params }) => {
     const r = db.prepare('DELETE FROM families WHERE record_id=?').run(params.id);
     if (!r.changes) throw new HttpError(404, 'not_found', 'Family record not found.');
-    audit(user, 'delete_family', params.id);
+    audit('delete_family', params.id);
     return { ok: true };
   });
 
   // Additive import, same rules as the current JSON import button. dryRun:true = "JSON बॅकअप तपासा".
-  route('POST', '/api/families/import', { auth: 'admin', bodyLimit: IMPORT_BODY_LIMIT }, ({ body, user }) => {
+  route('POST', '/api/families/import', { bodyLimit: IMPORT_BODY_LIMIT }, ({ body }) => {
     const b = obj(body);
     const dryRun = bool(b.dryRun);
     const incoming = Array.isArray(b.records) ? b.records : null;
@@ -555,14 +442,14 @@ export function createApp({ db, config }) {
     }
     if (!dryRun && toAdd.length) {
       tx(db, () => {
-        const ins = db.prepare(`INSERT INTO families(record_id,house_number,family_head,family_count,data,created_by,created_at,updated_at)
-                                VALUES (?,?,?,?,?,?,?,?)`);
+        const ins = db.prepare(`INSERT INTO families(record_id,house_number,family_head,family_count,data,created_at,updated_at)
+                                VALUES (?,?,?,?,?,?,?)`);
         for (const a of toAdd) {
           ins.run(a.recordId, a.data.houseNumber, a.data.familyHead, clampCount(a.data.familyCount),
-            JSON.stringify(a.data), user.id, a.createdAt, a.updatedAt);
+            JSON.stringify(a.data), a.createdAt, a.updatedAt);
         }
       });
-      audit(user, 'import_families', null, `added=${toAdd.length} skipped=${skipped}`);
+      audit('import_families', null, `added=${toAdd.length} skipped=${skipped}`);
     }
     return { dryRun, total: valid.length, toAdd: toAdd.length, skipped, added: dryRun ? 0 : toAdd.length };
   });

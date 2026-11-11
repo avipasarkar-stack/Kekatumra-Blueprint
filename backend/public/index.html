@@ -362,17 +362,7 @@
     <p>गावाच्या विकास नियोजनासाठी कुटुंबांची व विद्यार्थ्यांची माहिती संकलित करण्याचे प्रारूप.</p>
   </div>
 
-  <div id="surveyAuthPanel" class="panel">
-    <h2>सर्वेक्षणासाठी लॉगिन</h2>
-    <p id="surveySessionStatus" class="small-muted" role="status">कुटुंब नोंदी पाहण्यासाठी सर्वेक्षक किंवा प्रशासक म्हणून लॉगिन करा.</p>
-    <form id="surveyLoginForm">
-      <label for="surveyUsername">वापरकर्तानाव</label><input id="surveyUsername" name="username" autocomplete="username" required>
-      <label for="surveyPassword">पासवर्ड</label><input id="surveyPassword" name="password" type="password" autocomplete="current-password" required>
-      <button class="button button-primary" type="submit">लॉगिन करा</button>
-      <button id="surveyLogoutButton" class="button button-light" type="button" hidden>लॉगआउट</button>
-    </form>
-  </div>
-  <div id="surveyWorkspace" hidden>
+  <div id="surveyWorkspace">
   <div class="panel">
     <h2>कुटुंबाची प्राथमिक माहिती</h2>
 
@@ -393,16 +383,16 @@
       <button type="button" id="saveFamilySurvey" class="button button-primary" style="background:#15803d;color:#fff;border-color:#15803d">नवीन कुटुंबाची नोंद जतन करा</button>
       <button type="button" id="updateFamilySurvey" class="button button-primary" style="display:none;background:#d97706;color:#fff;border-color:#d97706">नोंद अद्ययावत करा</button>
       <button type="button" id="newFamilySurvey" class="button" style="background:#475569;color:#fff;border-color:#475569">नवीन नोंद सुरू करा</button>
-      <button type="button" id="exportFamilySurvey" data-admin-only hidden class="button" style="background:#2563eb;color:#fff;border-color:#2563eb">JSON डेटा फाइल डाउनलोड करा</button>
-      <button type="button" id="exportLegacyFamilyRecords" data-admin-only hidden class="button button-light">जुन्या ब्राउझर नोंदींचा JSON बॅकअप</button>
-      <button type="button" id="importFamilySurvey" data-admin-only hidden class="button" style="background:#7c3aed;color:#fff;border-color:#7c3aed">JSON बॅकअपमधून माहिती परत आणा</button>
-      <input type="file" id="importFamilySurveyFile" data-admin-only hidden accept=".json,application/json" style="display:none">
+      <button type="button" id="exportFamilySurvey" class="button" style="background:#2563eb;color:#fff;border-color:#2563eb">JSON डेटा फाइल डाउनलोड करा</button>
+      <button type="button" id="exportLegacyFamilyRecords" class="button button-light">जुन्या ब्राउझर नोंदींचा JSON बॅकअप</button>
+      <button type="button" id="importFamilySurvey" class="button" style="background:#7c3aed;color:#fff;border-color:#7c3aed">JSON बॅकअपमधून माहिती परत आणा</button>
+      <input type="file" id="importFamilySurveyFile" accept=".json,application/json" style="display:none">
       <button type="button" id="exportFamilySurveyCSV" class="button" style="background:#0f766e;color:#fff;border-color:#0f766e">Excel साठी CSV डाउनलोड करा</button>
       <button type="button" id="clearFamilySurvey" class="button" style="background:#b91c1c;color:#fff;border-color:#b91c1c">फॉर्म रिकामा करा</button>
     </div>
     <section id="savedFamiliesPanel" class="panel" style="margin-top:22px">
       <h2>जतन केलेल्या कुटुंबांची यादी</h2>
-      <p class="small-muted">लॉगिन केलेल्या सर्वेक्षक किंवा प्रशासकासाठी सर्व्हरवरील कुटुंब नोंदी येथे दिसतील.</p>
+      <p class="small-muted">जतन केलेल्या कुटुंब नोंदी येथे दिसतील.</p>
       <div id="familySearchHighlight" style="margin:18px 0 16px;padding:18px;background:#ecfdf5;border:2px solid #0f766e;border-left:8px solid #0f766e;border-radius:12px;box-shadow:0 3px 10px rgba(15,118,110,.12)">
         <label for="savedFamiliesSearch" style="display:block;margin:0 0 10px;font-weight:800;font-size:19px;color:#115e59">🔎 कुटुंब शोधा</label>
         <div style="font-size:14px;font-weight:600;color:#334155;margin-bottom:9px">घर क्रमांक, कुटुंबप्रमुखाचे नाव किंवा कुटुंबातील कोणत्याही सदस्याचे नाव टाका.</div>
@@ -422,7 +412,7 @@
       </div>
       <p id="savedFamiliesEmpty" class="small-muted" style="display:none">अद्याप स्वतंत्र कुटुंब नोंदी सापडल्या नाहीत. नोंद जतन केल्यावर ती येथे दिसेल.</p>
     </section>
-    <section id="jsonBackupCheckPanel" class="panel" data-admin-only hidden style="margin-top:22px;border:2px solid #7c3aed;background:#faf5ff">
+    <section id="jsonBackupCheckPanel" class="panel" style="margin-top:22px;border:2px solid #7c3aed;background:#faf5ff">
       <h2 style="color:#6d28d9">JSON बॅकअप तपासणी</h2>
       <p class="small-muted">JSON फाईल सर्व्हरच्या dry-run API ने तपासली जाईल. तपासणीमुळे प्रत्यक्ष नोंदींमध्ये कोणतीही भर, बदल किंवा डिलीट होणार नाही.</p>
       <button type="button" id="checkJsonBackupButton" class="button" style="background:#6d28d9;color:#fff;border-color:#6d28d9">JSON बॅकअप तपासा</button>
@@ -437,8 +427,7 @@
 </section>
     <section id="statistics" class="page section-wrap">
       <div class="page-title"><span class="eyebrow">माहितीवर आधारित नियोजन</span><h1>गावाची आकडेवारी</h1><p>कुटुंब सर्वेक्षणात जतन केलेल्या नोंदींवरून एकत्रित आकडेवारी.</p></div>
-      <div id="statsAuthNote" class="panel">एकत्रित कुटुंब आकडेवारी पाहण्यासाठी सर्वेक्षक किंवा प्रशासक म्हणून लॉगिन करा.</div>
-      <div class="stats-grid" id="statsDashboard" hidden>
+      <div class="stats-grid" id="statsDashboard">
         <article class="stat-card"><span>नोंदणीकृत कुटुंबे</span><strong id="statFamilies">0</strong><small>जतन केलेल्या स्वतंत्र नोंदी</small></article>
         <article class="stat-card"><span>एकूण सदस्य</span><strong id="statMembers">0</strong><small>कुटुंबातील सदस्यसंख्येची बेरीज</small></article>
         <article class="stat-card"><span>पुरुष</span><strong id="statMale">0</strong><small>लिंग नोंदीनुसार</small></article>
@@ -448,36 +437,27 @@
       </div>
       <div class="panel" style="margin-top:18px">
         <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap"><h2 style="margin:0">आकडेवारीचा तपशील</h2><button id="refreshVillageStats" class="button button-primary" type="button">आकडेवारी अद्ययावत करा</button></div>
-        <p id="statsDataNote" class="small-muted" aria-live="polite">आकडेवारी या ब्राउझरमध्ये जतन केलेल्या कुटुंब नोंदींवर आधारित आहे.</p>
+        <p id="statsDataNote" class="small-muted" aria-live="polite">आकडेवारी सर्व्हरवरील कुटुंब नोंदींवर आधारित आहे.</p>
         <p id="statsValidationNote" class="callout" style="margin-top:12px">लिंग अपूर्ण असलेल्या सदस्यांची संख्या शून्य असणे आवश्यक आहे. आकडेवारी अधिकृत वापरापूर्वी मूळ नोंदींशी पडताळा.</p>
       </div>
       <div class="callout"><strong>गोपनीयता:</strong> येथे फक्त एकत्रित संख्या दाखवली जाते. कुटुंबप्रमुखांची किंवा सदस्यांची वैयक्तिक नावे या विभागात दाखवली जात नाहीत.</div>
     </section>
 
     <section id="admin" class="page section-wrap">
-      <div class="page-title"><span class="eyebrow">मर्यादित प्रवेश</span><h1>प्रशासकीय विभाग</h1><p>मंजुरीसाठी प्रलंबित सूचना, कामगार आणि रेटिंग पाहण्यासाठी प्रशासक म्हणून लॉगिन करा.</p></div>
-      <div id="adminAuthPanel" class="panel">
-        <h2>प्रशासक लॉगिन</h2>
-        <p id="adminSessionStatus" class="small-muted" role="status">प्रशासकीय कृतींसाठी सर्व्हरने प्रशासक म्हणून पुष्टी करणे आवश्यक आहे.</p>
-        <form id="adminLoginForm">
-          <label for="adminUsername">वापरकर्तानाव</label><input id="adminUsername" name="username" autocomplete="username" required>
-          <label for="adminPassword">पासवर्ड</label><input id="adminPassword" name="password" type="password" autocomplete="current-password" required>
-          <button class="button button-primary" type="submit">लॉगिन करा</button>
-          <button id="adminLogoutButton" class="button button-light" type="button" hidden>लॉगआउट</button>
-        </form>
-      </div>
+      <div class="page-title"><span class="eyebrow">मंजुरी व व्यवस्थापन</span><h1>मंजुरी व व्यवस्थापन</h1><p>प्रलंबित सूचना, कामगार आणि रेटिंगची तपासणी करा.</p></div>
       <div class="info-grid">
-        <article class="panel"><h3>मुख्य प्रशासक</h3><p>वापरकर्ते, अधिकार, संपूर्ण प्रणालीची मांडणी आणि बॅकअप व्यवस्थापन.</p></article>
+        <article class="panel"><h3>गाव माहिती</h3><p>गावाची माहिती, बातम्या, छायाचित्रे आणि विकासकामे अद्ययावत करणे.</p></article>
         <article class="panel"><h3>माहिती संपादक</h3><p>गावाची माहिती, बातम्या, छायाचित्रे आणि विकासकामे अद्ययावत करणे.</p></article>
         <article class="panel"><h3>सर्वेक्षण व्यवस्थापक</h3><p>कुटुंब/विद्यार्थी नोंदी, पडताळणी आणि अधिकृत अहवाल.</p></article>
       </div>
-      <section class="panel" id="stage23LocalApprovalPanel" data-admin-only hidden style="margin-top:20px">
+      <section class="panel" id="stage23LocalApprovalPanel" style="margin-top:20px">
         <h2>मंजुरीसाठी प्रलंबित नोंदी</h2>
-        <p class="small-muted">मंजूर केल्यावर सूचना किंवा कामगार सार्वजनिक होतील; नाकारल्यास नोंद हटवली जाईल.</p>
+        <p class="small-muted">मंजूर केल्यावर सूचना किंवा कामगार सार्वजनिक होतील; नाकारल्यास नोंद हटवली जाईल. ही रांग सर्व अभ्यागतांना दिसते.</p>
         <div id="stage23PendingQueue"><p class="small-muted">प्रलंबित नोंदी नाहीत.</p></div>
+        <p id="adminActionStatus" class="small-muted" role="status" aria-live="polite"></p>
       </section>
       <h2 class="subheading">प्रत्यक्ष वापरापूर्वी आवश्यक बाबी</h2>
-      <ol class="checklist"><li>डोमेन व HTTPS होस्टिंग</li><li>गोपनीयता सूचना, संमती आणि डेटा-धारण धोरण मंजूर करणे</li><li>विश्वासार्ह सर्वेक्षकांसाठी स्वतंत्र खाती तयार करणे</li><li>नियमित बॅकअप व पुनर्प्राप्ती चाचणी करणे</li><li>ऑफलाइन सर्वेक्षण आणि सिंक्रोनायझेशन सध्या उपलब्ध नाही</li><li>गावाची स्थिर माहिती व अहवाल अधिकृत स्रोतांशी पडताळणे</li></ol>
+      <ol class="checklist"><li>डोमेन व HTTPS होस्टिंग</li><li>गोपनीयता सूचना, संमती आणि डेटा-धारण धोरण मंजूर करणे</li><li>नियमित बॅकअप व पुनर्प्राप्ती चाचणी करणे</li><li>ऑफलाइन सर्वेक्षण आणि सिंक्रोनायझेशन सध्या उपलब्ध नाही</li><li>गावाची स्थिर माहिती व अहवाल अधिकृत स्रोतांशी पडताळणे</li></ol>
     </section>
   </main>
 
@@ -723,7 +703,7 @@
     }
     // Stage 19: कुटुंब नोंदींवरून एकत्रित गाव आकडेवारी मोजा.
     async function updateVillageStatistics() {
-      if (!window.apiRequest || !window.currentUser) return;
+      if (!window.apiRequest) return;
       try {
       const values = await window.apiRequest("/api/families/stats");
       Object.entries(values).forEach(([id, value]) => {
@@ -791,7 +771,6 @@
         printButton.addEventListener("click", () => printFamilyRecord(record.recordId));
         actionCell.appendChild(printButton);
 
-        if (window.currentUser?.role === "admin") {
         const deleteButton = document.createElement("button");
         deleteButton.type = "button";
         deleteButton.textContent = "डिलीट";
@@ -818,7 +797,6 @@
           }
         });
         actionCell.appendChild(deleteButton);
-        }
 
         tr.appendChild(actionCell);
         body.appendChild(tr);
@@ -1345,7 +1323,7 @@ button{padding:9px 18px;border:0;border-radius:5px;background:#166534;color:#fff
         const url = URL.createObjectURL(new Blob([JSON.stringify(backup, null, 2)], {type:"application/json;charset=utf-8"}));
         const link = document.createElement("a"); link.href = url; link.download = "keket_umra_legacy_family_records.json"; link.click();
         setTimeout(() => URL.revokeObjectURL(url), 1000);
-        status.textContent = `${legacy.length} जुन्या ब्राउझर नोंदींचा JSON बॅकअप डाउनलोड केला. सर्व्हरवर हलवण्यासाठी प्रशासक म्हणून लॉगिन करून ही फाइल आयात करा.`;
+        status.textContent = `${legacy.length} जुन्या ब्राउझर नोंदींचा JSON बॅकअप डाउनलोड केला. हा बॅकअप सर्व्हरमध्ये आयात करा.`;
       } catch (error) {
         status.textContent = `जुन्या ब्राउझर नोंदी वाचता आल्या नाहीत: ${error.message}`;
       }
@@ -1530,10 +1508,10 @@ button{padding:9px 18px;border:0;border-radius:5px;background:#166534;color:#fff
       setEditMode(false);
       render(); status.textContent = "फॉर्म रिकामा केला आहे. नवीन नोंद तयार आहे.";
     });
-    let loadedForSession = false;
+    let loadedOnce = false;
     const surveyWorkspace = document.getElementById("surveyWorkspace");
     const saveDraft = () => {
-      if (!window.currentUser || !surveyWorkspace) return;
+      if (!surveyWorkspace) return;
       const draft = collectSurvey();
       if (editingRecordId) {
         draft.recordId = editingRecordId;
@@ -1549,10 +1527,9 @@ button{padding:9px 18px;border:0;border-radius:5px;background:#166534;color:#fff
     surveyWorkspace?.addEventListener("change", saveDraft);
     window.familySurvey = {
       async load() {
-        if (!window.currentUser) return;
         const loaded = await reloadFamilyRecords("");
         if (!loaded) return;
-        if (loadedForSession) return;
+        if (loadedOnce) return;
         try {
           const draft = JSON.parse(localStorage.getItem(draftKey) || "null");
           const matchingRecord = draft?.recordId && familyRecords.find(item => item.recordId === draft.recordId);
@@ -1561,7 +1538,7 @@ button{padding:9px 18px;border:0;border-radius:5px;background:#166534;color:#fff
           } else if (draft) {
             restoreDraftForEdit(draft, false);
           }
-          loadedForSession = true;
+          loadedOnce = true;
         } catch (error) {
           status.textContent = `ब्राउझरमधील मसुदा वाचता आला नाही: ${error.message}`;
         }
@@ -1594,6 +1571,6 @@ button{padding:9px 18px;border:0;border-radius:5px;background:#166534;color:#fff
 #suggestions textarea,#workers textarea,#ratings textarea{width:100%;box-sizing:border-box}
 </style>
 
-<script src="/app.js"></script>
+<script src="app.js"></script>
 </body>
 </html>

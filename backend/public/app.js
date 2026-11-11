@@ -4,10 +4,6 @@ const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
 }[ch]));
 
 const apiMessages = {
-  unauthorized: 'या सुविधेसाठी आधी लॉगिन करा.',
-  forbidden: 'या कृतीसाठी प्रशासकाचा अधिकार आवश्यक आहे.',
-  invalid_credentials: 'वापरकर्तानाव किंवा पासवर्ड चुकीचा आहे.',
-  account_locked: 'अनेक चुकीच्या प्रयत्नांमुळे खाते तात्पुरते लॉक झाले आहे. नंतर पुन्हा प्रयत्न करा.',
   rate_limited: 'खूप प्रयत्न झाले आहेत. कृपया थोड्या वेळाने पुन्हा प्रयत्न करा.',
   invalid_phone: 'मोबाईल क्रमांक १० अंकी असावा.',
   required: 'कृपया आवश्यक माहिती तपासा.',
@@ -18,7 +14,7 @@ const apiMessages = {
 };
 
 async function apiRequest(path, { method = 'GET', body } = {}) {
-  const options = { method, credentials: 'same-origin', headers: {} };
+  const options = { method, credentials: 'omit', headers: {} };
   if (body !== undefined) {
     options.headers['Content-Type'] = 'application/json';
     options.body = JSON.stringify(body);
@@ -36,9 +32,6 @@ async function apiRequest(path, { method = 'GET', body } = {}) {
     error.status = response.status;
     error.code = data?.error || 'request_failed';
     error.data = data;
-    if (response.status === 401 && path !== '/api/auth/me') {
-      setTimeout(() => window.refreshSession?.(), 0);
-    }
     throw error;
   }
   return data;
@@ -60,8 +53,8 @@ function showPage(pageId) {
   if (pageId === 'skills') renderSkills();
   if (pageId === 'workers') loadWorkers();
   if (pageId === 'suggestions') loadSuggestions();
-  if (pageId === 'admin' && window.currentUser?.role === 'admin') loadAdminQueue();
-  if (pageId === 'survey' && window.currentUser && window.familySurvey) window.familySurvey.load();
+  if (pageId === 'admin') loadAdminQueue();
+  if (pageId === 'survey' && window.familySurvey) window.familySurvey.load();
 }
 window.showPage = showPage;
 document.addEventListener('click', event => {
@@ -279,21 +272,19 @@ function renderAdminQueue(data) {
   host.innerHTML = entries.length ? entries.join('') : '<p class="small-muted">प्रलंबित नोंदी नाहीत.</p>';
 }
 async function loadAdminQueue() {
-  if (window.currentUser?.role !== 'admin') return;
   const host = $('stage23PendingQueue');
   if (host) host.innerHTML = '<p class="small-muted">प्रलंबित नोंदी लोड होत आहेत…</p>';
   try {
     renderAdminQueue(await apiRequest('/api/admin/pending'));
   } catch (error) {
     if (host) host.textContent = `प्रलंबित नोंदी लोड करता आल्या नाहीत: ${errorText(error)}`;
-    if (error.status === 401 || error.status === 403) await refreshSession();
   }
 }
 $('stage23PendingQueue')?.addEventListener('click', async event => {
   const target = event.target;
   if (!(target instanceof Element)) return;
   const button = target.closest('button[data-queue-action]');
-  if (!button || window.currentUser?.role !== 'admin') return;
+  if (!button) return;
   const { kind, id, queueAction } = button.dataset;
   if (queueAction === 'reject' && !confirm('ही प्रलंबित नोंद कायमची हटवायची आहे का?')) return;
   button.disabled = true;
@@ -306,95 +297,14 @@ $('stage23PendingQueue')?.addEventListener('click', async event => {
     await Promise.all([loadAdminQueue(), loadSuggestions(), loadWorkers(true)]);
     await renderSkills();
   } catch (error) {
-    setStatus('adminSessionStatus', `कृती करता आली नाही: ${errorText(error)}`);
+    setStatus('adminActionStatus', `कृती करता आली नाही: ${errorText(error)}`);
     button.disabled = false;
-    if (error.status === 401 || error.status === 403) await refreshSession();
   }
 });
 
-function setLoginForm(form, user) {
-  if (!form) return;
-  const loggedIn = Boolean(user);
-  form.querySelectorAll('label, input, button[type="submit"]').forEach(element => { element.hidden = loggedIn; });
-  const logout = form.querySelector('button[type="button"]');
-  if (logout) logout.hidden = !loggedIn;
-}
-function updateSessionUI(user) {
-  window.currentUser = user;
-  const surveyAllowed = user?.role === 'surveyor' || user?.role === 'admin';
-  const isAdmin = user?.role === 'admin';
-  const surveyWorkspace = $('surveyWorkspace');
-  if (surveyWorkspace) surveyWorkspace.hidden = !surveyAllowed;
-  if ($('statsDashboard')) $('statsDashboard').hidden = !surveyAllowed;
-  if ($('statsAuthNote')) $('statsAuthNote').hidden = surveyAllowed;
-  document.querySelectorAll('[data-admin-only]').forEach(element => { element.hidden = !isAdmin; });
-  setLoginForm($('surveyLoginForm'), surveyAllowed ? user : null);
-  setLoginForm($('adminLoginForm'), isAdmin ? user : null);
-  setStatus('surveySessionStatus', surveyAllowed
-    ? `${user.username} (${user.role === 'admin' ? 'प्रशासक' : 'सर्वेक्षक'}) म्हणून लॉगिन आहे.`
-    : 'कुटुंब नोंदी पाहण्यासाठी सर्वेक्षक किंवा प्रशासक म्हणून लॉगिन करा.');
-  setStatus('adminSessionStatus', isAdmin
-    ? `${user.username} प्रशासक म्हणून लॉगिन आहेत.`
-    : user
-      ? `${user.username} सर्वेक्षक म्हणून लॉगिन आहेत. प्रशासकीय कृतींसाठी प्रशासक म्हणून लॉगिन करा.`
-      : 'प्रशासकीय कृतींसाठी सर्व्हरने प्रशासक म्हणून पुष्टी करणे आवश्यक आहे.');
-  $('surveyLogoutButton')?.toggleAttribute('hidden', !surveyAllowed);
-  $('adminLogoutButton')?.toggleAttribute('hidden', !isAdmin);
-  if (!surveyAllowed && window.familySurvey) window.familySurvey.clear();
-  if (surveyAllowed && window.familySurvey) window.familySurvey.load();
-  if (isAdmin) loadAdminQueue();
-  else if ($('stage23PendingQueue')) $('stage23PendingQueue').innerHTML = '<p class="small-muted">प्रलंबित नोंदी पाहण्यासाठी प्रशासक म्हणून लॉगिन करा.</p>';
-}
-async function refreshSession() {
-  try {
-    const data = await apiRequest('/api/auth/me');
-    updateSessionUI(data.user);
-    return data.user;
-  } catch (error) {
-    if (error.status === 401) {
-      updateSessionUI(null);
-      return null;
-    }
-    window.refreshSession = refreshSession;
-    setStatus('surveySessionStatus', `लॉगिन स्थिती तपासता आली नाही: ${errorText(error)}`);
-    setStatus('adminSessionStatus', `लॉगिन स्थिती तपासता आली नाही: ${errorText(error)}`);
-    return null;
-  }
-}
-async function handleLogin(event) {
-  event.preventDefault();
-  const form = event.currentTarget;
-  const username = form.querySelector('[name="username"]').value.trim();
-  const password = form.querySelector('[name="password"]').value;
-  const statusId = form.id === 'surveyLoginForm' ? 'surveySessionStatus' : 'adminSessionStatus';
-  setStatus(statusId, 'लॉगिन तपासत आहे…');
-  try {
-    await apiRequest('/api/auth/login', { method: 'POST', body: { username, password } });
-    const user = await refreshSession();
-    if (!user) throw new Error('लॉगिन सत्राची पुष्टी करता आली नाही.');
-    form.reset();
-    if (user.role === 'admin') await loadAdminQueue();
-    else setStatus('adminSessionStatus', 'सर्वेक्षणासाठी प्रवेश मिळाला; प्रशासकीय कृतींसाठी प्रशासक भूमिका आवश्यक आहे.');
-  } catch (error) {
-    setStatus(statusId, `लॉगिन झाले नाही: ${errorText(error)}`);
-  }
-}
-$('surveyLoginForm')?.addEventListener('submit', handleLogin);
-$('adminLoginForm')?.addEventListener('submit', handleLogin);
-async function logout() {
-  try {
-    await apiRequest('/api/auth/logout', { method: 'POST', body: {} });
-    updateSessionUI(null);
-  } catch (error) {
-    setStatus('adminSessionStatus', `लॉगआउट करता आले नाही: ${errorText(error)}`);
-  }
-}
-$('surveyLogoutButton')?.addEventListener('click', logout);
-$('adminLogoutButton')?.addEventListener('click', logout);
-
 async function initialize() {
   await Promise.all([loadSuggestions(), loadWorkers()]);
-  await refreshSession();
+  await Promise.all([window.familySurvey?.load(), loadAdminQueue()]);
   await renderSkills();
 }
 initialize();

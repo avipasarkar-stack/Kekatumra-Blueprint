@@ -4,8 +4,8 @@ import http from 'node:http';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
 import { openDb } from '../lib/db.js';
-import { hashPassword } from '../lib/auth.js';
 import { createApp } from '../app.js';
 
 // ---------- test harness ----------
@@ -19,23 +19,18 @@ fs.writeFileSync(path.join(tmp, 'outside.txt'), 'outside the public folder');
 async function startApp(overrides = {}) {
   const db = openDb(':memory:');
   const config = {
-    publicDir, cookieSecure: false, trustProxy: false, sessionHours: 1, submitLimitPerHour: 50, ...overrides,
+    publicDir, trustProxy: false, submitLimitPerHour: 50, ...overrides,
   };
   const server = createApp({ db, config });
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
   const port = server.address().port;
-  const addUser = async (username, password, role) =>
-    db.prepare('INSERT INTO users(username,password_hash,role,created_at) VALUES (?,?,?,?)')
-      .run(username, await hashPassword(password), role, new Date().toISOString());
-
-  function request(method, url, { body, cookie, headers = {}, raw } = {}) {
+  function request(method, url, { body, headers = {}, raw } = {}) {
     return new Promise((resolve, reject) => {
       const payload = raw ?? (body === undefined ? undefined : JSON.stringify(body));
       const req = http.request({
         host: '127.0.0.1', port, path: url, method,
         headers: {
           ...(payload !== undefined ? { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) } : {}),
-          ...(cookie ? { Cookie: cookie } : {}),
           ...headers,
         },
       }, (res) => {
@@ -52,13 +47,8 @@ async function startApp(overrides = {}) {
       req.end();
     });
   }
-  async function login(username, password) {
-    const res = await request('POST', '/api/auth/login', { body: { username, password } });
-    assert.equal(res.status, 200, `login failed: ${res.text}`);
-    return res.headers['set-cookie'][0].split(';')[0];
-  }
   const close = () => new Promise((r) => { server.closeAllConnections?.(); server.close(r); db.close(); });
-  return { db, port, request, addUser, login, close };
+  return { db, port, request, close };
 }
 
 const family = (house, head, members) => {
@@ -72,13 +62,44 @@ const family = (house, head, members) => {
   return r;
 };
 
+test('legacy account data is removed without losing family records', () => {
+  const file = path.join(tmp, 'legacy.db');
+  const legacy = new DatabaseSync(file);
+  legacy.exec(`
+    PRAGMA foreign_keys = ON;
+    CREATE TABLE users (id INTEGER PRIMARY KEY, username TEXT, password_hash TEXT);
+    CREATE TABLE sessions (token_hash TEXT PRIMARY KEY, user_id INTEGER REFERENCES users(id));
+    CREATE TABLE families (
+      record_id TEXT PRIMARY KEY, house_number TEXT NOT NULL, family_head TEXT NOT NULL,
+      family_count INTEGER NOT NULL, data TEXT NOT NULL,
+      created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+    );
+    CREATE TABLE audit_log (
+      id INTEGER PRIMARY KEY, at TEXT NOT NULL, user_id INTEGER, username TEXT,
+      action TEXT NOT NULL, target TEXT, detail TEXT
+    );
+    INSERT INTO users VALUES (1, 'legacy', 'old-hash');
+    INSERT INTO sessions VALUES ('old-token', 1);
+    INSERT INTO families VALUES ('F1', '1', 'कुटुंब', 1, '{}', 1, '2024-01-01', '2024-01-01');
+    INSERT INTO audit_log VALUES (1, '2024-01-01', 1, 'legacy', 'old_action', NULL, NULL);
+  `);
+  legacy.close();
+
+  const db = openDb(file);
+  const accounts = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('users','sessions')").all();
+  assert.deepEqual(accounts, []);
+  assert.equal(db.prepare('SELECT record_id FROM families').get().record_id, 'F1');
+  assert.equal(db.prepare('SELECT username FROM audit_log').get().username, null);
+  assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(), []);
+  db.close();
+});
+
 // ---------- public data + approval flow ----------
 describe('approval flow', () => {
-  let t, admin;
+  let t;
   before(async () => {
     t = await startApp();
-    await t.addUser('boss', 'correct-horse-battery', 'admin');
-    admin = await t.login('boss', 'correct-horse-battery');
   });
   after(() => t.close());
 
@@ -97,12 +118,12 @@ describe('approval flow', () => {
     assert.equal(post.status, 201);
     assert.deepEqual((await t.request('GET', '/api/suggestions')).json, []);
 
-    const pending = await t.request('GET', '/api/admin/pending', { cookie: admin });
+    const pending = await t.request('GET', '/api/admin/pending');
     assert.equal(pending.json.suggestions.length, 1);
-    assert.equal(pending.json.suggestions[0].phone, '9876543210'); // admin can see it
+    assert.equal(pending.json.suggestions[0].phone, '9876543210');
 
     const id = pending.json.suggestions[0].id;
-    assert.equal((await t.request('POST', `/api/admin/queue/suggestions/${id}/approve`, { cookie: admin })).status, 200);
+    assert.equal((await t.request('POST', `/api/admin/queue/suggestions/${id}/approve`)).status, 200);
     const pub = (await t.request('GET', '/api/suggestions')).json;
     assert.equal(pub.length, 1);
     assert.equal(pub[0].name, 'राम');
@@ -111,8 +132,8 @@ describe('approval flow', () => {
 
   test('suggestion without consent hides the name', async () => {
     await t.request('POST', '/api/suggestions', { body: { category: 'पाणी', text: 'नळ योजना', consent: false, name: 'सीता', phone: '9876543210' } });
-    const id = (await t.request('GET', '/api/admin/pending', { cookie: admin })).json.suggestions.at(-1).id;
-    await t.request('POST', `/api/admin/queue/suggestions/${id}/approve`, { cookie: admin });
+    const id = (await t.request('GET', '/api/admin/pending')).json.suggestions.at(-1).id;
+    await t.request('POST', `/api/admin/queue/suggestions/${id}/approve`);
     const pub = (await t.request('GET', '/api/suggestions')).json;
     assert.ok(pub.every((s) => s.name !== 'सीता'));
   });
@@ -139,8 +160,8 @@ describe('approval flow', () => {
     assert.equal((await mk('सुतार दोन', false)).status, 201);
     assert.deepEqual((await t.request('GET', '/api/workers')).json, []); // none approved yet
 
-    const pend = (await t.request('GET', '/api/admin/pending', { cookie: admin })).json.workers;
-    for (const w of pend) await t.request('POST', `/api/admin/queue/workers/${w.id}/approve`, { cookie: admin });
+    const pend = (await t.request('GET', '/api/admin/pending')).json.workers;
+    for (const w of pend) await t.request('POST', `/api/admin/queue/workers/${w.id}/approve`);
 
     const all = (await t.request('GET', '/api/workers')).json;
     assert.equal(all.length, 2);
@@ -160,9 +181,9 @@ describe('approval flow', () => {
     assert.equal(w1.ratingCount, 0);
     assert.equal(w1.ratingAvg, null);
 
-    const ratings = (await t.request('GET', '/api/admin/pending', { cookie: admin })).json.ratings;
+    const ratings = (await t.request('GET', '/api/admin/pending')).json.ratings;
     assert.equal(ratings.length, 2);
-    for (const r of ratings) await t.request('POST', `/api/admin/queue/ratings/${r.id}/approve`, { cookie: admin });
+    for (const r of ratings) await t.request('POST', `/api/admin/queue/ratings/${r.id}/approve`);
     w1 = (await t.request('GET', '/api/workers')).json.find((w) => w.id === consenting.id);
     assert.equal(w1.ratingCount, 2);
     assert.equal(w1.ratingAvg, 4.5);
@@ -170,81 +191,39 @@ describe('approval flow', () => {
 
   test('reject deletes the item; unknown kinds are 404 (no SQL from user input)', async () => {
     await t.request('POST', '/api/suggestions', { body: { category: 'a', text: 'to reject' } });
-    const id = (await t.request('GET', '/api/admin/pending', { cookie: admin })).json.suggestions[0].id;
-    assert.equal((await t.request('DELETE', `/api/admin/queue/suggestions/${id}`, { cookie: admin })).status, 200);
-    assert.equal((await t.request('GET', '/api/admin/pending', { cookie: admin })).json.suggestions.length, 0);
-    assert.equal((await t.request('DELETE', '/api/admin/queue/constructor/x', { cookie: admin })).status, 404);
-    assert.equal((await t.request('POST', '/api/admin/queue/users;drop/x/approve', { cookie: admin })).status, 404);
+    const id = (await t.request('GET', '/api/admin/pending')).json.suggestions[0].id;
+    assert.equal((await t.request('DELETE', `/api/admin/queue/suggestions/${id}`)).status, 200);
+    assert.equal((await t.request('GET', '/api/admin/pending')).json.suggestions.length, 0);
+    assert.equal((await t.request('DELETE', '/api/admin/queue/constructor/x')).status, 404);
+    assert.equal((await t.request('POST', '/api/admin/queue/users;drop/x/approve')).status, 404);
   });
 
-  test('audit log records admin actions', async () => {
-    const log = await t.request('GET', '/api/admin/audit', { cookie: admin });
-    assert.equal(log.status, 200);
-    const actions = log.json.map((e) => e.action);
-    assert.ok(actions.includes('login'));
+  test('login endpoints do not exist; admin actions are public', async () => {
+    assert.equal((await t.request('POST', '/api/auth/login', { body: {} })).status, 404);
+    assert.equal((await t.request('GET', '/api/auth/me')).status, 404);
+    assert.equal((await t.request('POST', '/api/auth/logout', { body: {} })).status, 404);
+    const actions = t.db.prepare('SELECT action FROM audit_log').all().map((entry) => entry.action);
     assert.ok(actions.includes('approve_suggestions'));
   });
 });
 
-// ---------- authentication and permissions ----------
-describe('auth and permissions', () => {
+// ---------- public API validation ----------
+describe('public API validation', () => {
   let t;
   before(async () => {
     t = await startApp();
-    await t.addUser('boss', 'correct-horse-battery', 'admin');
-    await t.addUser('field', 'another-long-password', 'surveyor');
   });
   after(() => t.close());
 
-  test('admin and survey endpoints need login', async () => {
-    for (const [m, p] of [['GET', '/api/admin/pending'], ['GET', '/api/families'], ['GET', '/api/families/stats'], ['GET', '/api/admin/users']]) {
-      assert.equal((await t.request(m, p)).status, 401, `${m} ${p}`);
-    }
-  });
-
-  test('wrong password gives 401; good login sets an HttpOnly SameSite cookie', async () => {
-    const bad = await t.request('POST', '/api/auth/login', { body: { username: 'boss', password: 'wrong-wrong-wrong' } });
-    assert.equal(bad.status, 401);
-    const ok = await t.request('POST', '/api/auth/login', { body: { username: 'BOSS', password: 'correct-horse-battery' } });
-    assert.equal(ok.status, 200);
-    const cookie = ok.headers['set-cookie'][0];
-    assert.match(cookie, /HttpOnly/);
-    assert.match(cookie, /SameSite=Strict/);
-  });
-
-  test('surveyor can use the survey but not admin functions', async () => {
-    const field = await t.login('field', 'another-long-password');
-    assert.equal((await t.request('GET', '/api/families', { cookie: field })).status, 200);
-    assert.equal((await t.request('GET', '/api/admin/pending', { cookie: field })).status, 403);
-    assert.equal((await t.request('GET', '/api/families/export', { cookie: field })).status, 403);
-    assert.equal((await t.request('POST', '/api/families/import', { cookie: field, body: { records: [] } })).status, 403);
-    assert.equal((await t.request('DELETE', '/api/families/KUM-x', { cookie: field })).status, 403);
-  });
-
-  test('logout invalidates the session', async () => {
-    const c = await t.login('boss', 'correct-horse-battery');
-    assert.equal((await t.request('GET', '/api/auth/me', { cookie: c })).status, 200);
-    await t.request('POST', '/api/auth/logout', { cookie: c });
-    assert.equal((await t.request('GET', '/api/auth/me', { cookie: c })).status, 401);
-  });
-
-  test('admin can create a surveyor; deleting the user kills their session', async () => {
-    const admin = await t.login('boss', 'correct-horse-battery');
-    const weak = await t.request('POST', '/api/admin/users', { cookie: admin, body: { username: 'new1', password: 'short', role: 'surveyor' } });
-    assert.equal(weak.status, 400);
-    assert.equal((await t.request('POST', '/api/admin/users', { cookie: admin, body: { username: 'new1', password: 'long-enough-password', role: 'surveyor' } })).status, 201);
-    assert.equal((await t.request('POST', '/api/admin/users', { cookie: admin, body: { username: 'new1', password: 'long-enough-password', role: 'surveyor' } })).status, 409);
-    const c = await t.login('new1', 'long-enough-password');
-    const users = (await t.request('GET', '/api/admin/users', { cookie: admin })).json;
-    const id = users.find((u) => u.username === 'new1').id;
-    assert.equal((await t.request('DELETE', `/api/admin/users/${id}`, { cookie: admin })).status, 200);
-    assert.equal((await t.request('GET', '/api/auth/me', { cookie: c })).status, 401);
-    const me = users.find((u) => u.username === 'boss').id;
-    assert.equal((await t.request('DELETE', `/api/admin/users/${me}`, { cookie: admin })).status, 400);
+  test('family and management endpoints work without a session', async () => {
+    assert.equal((await t.request('GET', '/api/families')).status, 200);
+    assert.equal((await t.request('GET', '/api/families/stats')).status, 200);
+    assert.equal((await t.request('GET', '/api/admin/pending')).status, 200);
+    assert.equal((await t.request('GET', '/api/families/export')).status, 200);
+    assert.equal((await t.request('POST', '/api/auth/login', { body: {} })).status, 404);
   });
 
   test('CSRF protections: cross-origin and non-JSON requests are refused', async () => {
-    const c = await t.login('boss', 'correct-horse-battery');
     const cross = await t.request('POST', '/api/suggestions', {
       body: { category: 'a', text: 'b' }, headers: { Origin: 'https://evil.example' },
     });
@@ -261,7 +240,6 @@ describe('auth and permissions', () => {
       body: { category: 'a', text: 'b' }, headers: { Origin: 'not a url' },
     });
     assert.equal(garbage.status, 403);
-    void c;
   });
 
   test('malformed and oversized bodies', async () => {
@@ -273,20 +251,7 @@ describe('auth and permissions', () => {
   });
 });
 
-describe('login protection', () => {
-  test('account locks after 5 wrong passwords, even for the right password', async () => {
-    const t = await startApp();
-    await t.addUser('boss', 'correct-horse-battery', 'admin');
-    for (let i = 0; i < 5; i++) {
-      const r = await t.request('POST', '/api/auth/login', { body: { username: 'boss', password: 'bad-bad-bad-bad' } });
-      assert.equal(r.status, 401);
-    }
-    const locked = await t.request('POST', '/api/auth/login', { body: { username: 'boss', password: 'correct-horse-battery' } });
-    assert.equal(locked.status, 429);
-    assert.equal(locked.json.error, 'account_locked');
-    await t.close();
-  });
-
+describe('public rate limiting', () => {
   test('public submissions are rate limited per IP', async () => {
     const t = await startApp({ submitLimitPerHour: 3 });
     const codes = [];
@@ -300,17 +265,13 @@ describe('login protection', () => {
 
 // ---------- family survey ----------
 describe('family survey', () => {
-  let t, admin, field;
+  let t;
   before(async () => {
     t = await startApp();
-    await t.addUser('boss', 'correct-horse-battery', 'admin');
-    await t.addUser('field', 'another-long-password', 'surveyor');
-    admin = await t.login('boss', 'correct-horse-battery');
-    field = await t.login('field', 'another-long-password');
   });
   after(() => t.close());
 
-  const create = (record, extra = {}, cookie = field) => t.request('POST', '/api/families', { cookie, body: { record, ...extra } });
+  const create = (record, extra = {}) => t.request('POST', '/api/families', { body: { record, ...extra } });
 
   test('creates a record and returns the stored shape', async () => {
     const res = await create(family('12', 'रामराव पाटील', [
@@ -321,9 +282,9 @@ describe('family survey', () => {
     assert.match(res.json.recordId, /^KUM-/);
     assert.equal(res.json.member1_mobile, '9876543210'); // normalised to digits
     assert.ok(res.json.createdAt && res.json.savedAt);
-    const list = await t.request('GET', '/api/families', { cookie: field });
+    const list = await t.request('GET', '/api/families');
     assert.equal(list.json.length, 1);
-    assert.equal((await t.request('GET', `/api/families/${res.json.recordId}`, { cookie: field })).status, 200);
+    assert.equal((await t.request('GET', `/api/families/${res.json.recordId}`)).status, 200);
   });
 
   test('required-field rules from the form are enforced on the server', async () => {
@@ -385,20 +346,20 @@ describe('family survey', () => {
     const id = c.json.recordId;
 
     const edited = { ...family('30', 'ब', [{ name: 'ब एक (बदल)' }, { name: 'ब दोन', gender: 'महिला' }]) };
-    const up = await t.request('PUT', `/api/families/${id}`, { cookie: field, body: { record: edited, baseSavedAt: c.json.savedAt } });
+    const up = await t.request('PUT', `/api/families/${id}`, { body: { record: edited, baseSavedAt: c.json.savedAt } });
     assert.equal(up.status, 200);
     assert.equal(up.json.member1_name, 'ब एक (बदल)');
     assert.equal(up.json.createdAt, c.json.createdAt);
 
-    const stale = await t.request('PUT', `/api/families/${id}`, { cookie: field, body: { record: edited, baseSavedAt: c.json.savedAt } });
+    const stale = await t.request('PUT', `/api/families/${id}`, { body: { record: edited, baseSavedAt: c.json.savedAt } });
     assert.equal(stale.status, 409);
     assert.equal(stale.json.error, 'conflict');
 
-    const stats = (await t.request('GET', '/api/families/stats', { cookie: field })).json;
+    const stats = (await t.request('GET', '/api/families/stats')).json;
     assert.ok(stats.families >= 3);
     assert.equal(stats.members, stats.male + stats.female + stats.other + stats.missing);
 
-    const search = (await t.request('GET', '/api/families?q=' + encodeURIComponent('सुनीता'), { cookie: field })).json;
+    const search = (await t.request('GET', '/api/families?q=' + encodeURIComponent('सुनीता'))).json;
     assert.ok(search.length >= 1);
 
     // an old record with a blank gender can be edited without being forced to fill it in
@@ -407,40 +368,39 @@ describe('family survey', () => {
       .run(JSON.stringify({ houseNumber: '50', familyHead: 'जुना', familyCount: '1', member1_name: 'जुना माणूस', member1_gender: '' }),
         '2024-01-01T00:00:00.000Z', '2024-01-01T00:00:00.000Z');
     const legacy = await t.request('PUT', '/api/families/OLD-1', {
-      cookie: field,
       body: { record: { houseNumber: '50', familyHead: 'जुना', familyCount: '1', member1_name: 'जुना माणूस', member1_gender: '', village: 'x' } },
     });
     assert.equal(legacy.status, 200);
   });
 
-  test('admin can delete; export + import round trip is additive', async () => {
-    const before = (await t.request('GET', '/api/families', { cookie: admin })).json.length;
-    const exp = await t.request('GET', '/api/families/export', { cookie: admin });
+  test('public delete, export + import round trip is additive', async () => {
+    const before = (await t.request('GET', '/api/families')).json.length;
+    const exp = await t.request('GET', '/api/families/export');
     assert.equal(exp.status, 200);
     assert.match(exp.headers['content-disposition'], /attachment/);
     assert.equal(exp.json.backupType, 'keketUmraFamilyRecordsV1');
     assert.equal(exp.json.records.length, before);
 
     // importing the same backup again adds nothing
-    const again = await t.request('POST', '/api/families/import', { cookie: admin, body: { records: exp.json.records } });
+    const again = await t.request('POST', '/api/families/import', { body: { records: exp.json.records } });
     assert.equal(again.json.added, 0);
     assert.equal(again.json.skipped, before);
 
     // a new record is added; dryRun reports without writing
     const fresh = { ...family('777', 'नवीन', [{ name: 'नवीन व्यक्ती', dob: '2000-01-01' }]), recordId: 'KUM-import-1' };
-    const dry = await t.request('POST', '/api/families/import', { cookie: admin, body: { records: [fresh], dryRun: true } });
+    const dry = await t.request('POST', '/api/families/import', { body: { records: [fresh], dryRun: true } });
     assert.deepEqual([dry.json.toAdd, dry.json.added], [1, 0]);
-    assert.equal((await t.request('GET', '/api/families', { cookie: admin })).json.length, before);
-    const real = await t.request('POST', '/api/families/import', { cookie: admin, body: { records: [fresh] } });
+    assert.equal((await t.request('GET', '/api/families')).json.length, before);
+    const real = await t.request('POST', '/api/families/import', { body: { records: [fresh] } });
     assert.equal(real.json.added, 1);
-    assert.equal((await t.request('GET', '/api/families', { cookie: admin })).json.length, before + 1);
+    assert.equal((await t.request('GET', '/api/families')).json.length, before + 1);
 
     // a broken record stops the whole import
-    const broken = await t.request('POST', '/api/families/import', { cookie: admin, body: { records: [fresh, { recordId: 'x' }] } });
+    const broken = await t.request('POST', '/api/families/import', { body: { records: [fresh, { recordId: 'x' }] } });
     assert.equal(broken.status, 400);
 
-    assert.equal((await t.request('DELETE', '/api/families/KUM-import-1', { cookie: admin })).status, 200);
-    assert.equal((await t.request('GET', '/api/families/KUM-import-1', { cookie: admin })).status, 404);
+    assert.equal((await t.request('DELETE', '/api/families/KUM-import-1')).status, 200);
+    assert.equal((await t.request('GET', '/api/families/KUM-import-1')).status, 404);
   });
 });
 

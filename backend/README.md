@@ -1,7 +1,7 @@
 # Kekatumra backend
 
-API + static file server for the **माझं गाव केकतउमरा** website. It replaces the browser-only
-`localStorage` storage with a real database, real logins, and server-enforced approvals.
+API + static file server for the **माझं गाव केकतउमरा** website. It stores records in SQLite and
+provides public survey and management endpoints. There are no user accounts.
 
 - **No npm install needed.** Uses only Node's built-in modules (`node:http`, `node:sqlite`, `node:crypto`).
 - **Needs Node.js 22.13 or newer.** (`node:sqlite` is still marked experimental by Node; the start script hides that warning.)
@@ -15,7 +15,6 @@ public-only directory, then run the server from `backend/`:
 ```bash
 cd backend
 npm run sync-frontend
-npm run create-admin -- yourname   # asks for a password (min 10 characters)
 npm start
 ```
 
@@ -28,15 +27,13 @@ The server's default static directory is `backend/public` when started from this
 directory. Do not set `PUBLIC_DIR` to the project root: the public directory is
 deliberately isolated from backend source, `.env`, and SQLite data.
 
-## Roles
+## Public access
 
 | Role | Can do |
 |------|--------|
-| *(public, no login)* | Read approved suggestions/workers/ratings. Submit suggestions, worker registrations, ratings (all start as **pending**). |
-| `surveyor` | Everything public + create, view, edit and search family survey records. |
-| `admin` | Everything + approve/reject submissions, delete families, JSON export/import, manage users, view audit log. |
+| Any visitor | Read and submit public suggestions, worker registrations and ratings; approve/reject pending submissions; view, create, edit, delete, export, and import family survey records. |
 
-Create more accounts with `npm run create-admin -- name surveyor` or `POST /api/admin/users`.
+All API endpoints, including management and family data endpoints, are public. Do not enter real personal or sensitive information into this deployment.
 
 ## API
 
@@ -54,34 +51,26 @@ Use the `error` code in the frontend to show your own Marathi text.
 | `POST /api/workers` | `{name, skill, experience, availability, area, description, phone, contactConsent}` |
 | `POST /api/ratings` | `{workerId, stars (1-5), feedback}`. The worker must be approved. |
 
-### Login
-
-`POST /api/auth/login` `{username, password}` · `POST /api/auth/logout` · `GET /api/auth/me`
-
-The session is an HttpOnly, SameSite=Strict cookie, so the frontend just calls `fetch('/api/...')` (same origin) and does not handle tokens.
-
-### Admin (role `admin`)
+### Management (public)
 
 | Method & path | Notes |
 |---|---|
-| `GET /api/admin/pending` | `{suggestions, workers, ratings}` waiting for review (includes phone numbers). |
+| `GET /api/admin/pending` | `{suggestions, workers, ratings}` waiting for review (includes contact details). |
 | `POST /api/admin/queue/:kind/:id/approve` | `kind` = `suggestions`, `workers` or `ratings`. |
 | `DELETE /api/admin/queue/:kind/:id` | Reject = delete (same as today's "नाकारून हटवा"). |
-| `GET/POST /api/admin/users`, `DELETE /api/admin/users/:id` | Manage logins. |
-| `GET /api/admin/audit?limit=100` | Who did what, and when. |
 
-### Family survey (login required)
+### Family survey (public)
 
 | Method & path | Role | Notes |
 |---|---|---|
-| `GET /api/families?q=` | any | Search by house number, head, member names. |
-| `GET /api/families/stats` | any | `{families, members, male, female, other, missing}` |
-| `GET /api/families/:id` | any | |
-| `POST /api/families` | any | `{record, acknowledge?}` |
-| `PUT /api/families/:id` | any | `{record, baseSavedAt?, acknowledge?}` |
-| `DELETE /api/families/:id` | admin | |
-| `GET /api/families/export` | admin | Same JSON format as the current backup button. |
-| `POST /api/families/import` | admin | `{records, dryRun?}`. Additive only, never overwrites. `dryRun:true` = "JSON बॅकअप तपासा". |
+| `GET /api/families?q=` | public | Search by house number, head, member names. |
+| `GET /api/families/stats` | public | `{families, members, male, female, other, missing}` |
+| `GET /api/families/:id` | public | |
+| `POST /api/families` | public | `{record, acknowledge?}` |
+| `PUT /api/families/:id` | public | `{record, baseSavedAt?, acknowledge?}` |
+| `DELETE /api/families/:id` | public | |
+| `GET /api/families/export` | public | Same JSON format as the current backup button. |
+| `POST /api/families/import` | public | `{records, dryRun?}`. Additive only, never overwrites. `dryRun:true` = "JSON बॅकअप तपासा". |
 
 `record` is the same flat object the form already builds (`houseNumber`, `familyHead`, `familyCount`, `member1_name`, ...).
 The server re-checks the form's rules: required fields, gender, 10-digit mobiles, same person twice in one form.
@@ -95,26 +84,24 @@ The server re-checks the form's rules: required fields, gender, 10-digit mobiles
 
 | Today (`localStorage` key) | Becomes |
 |---|---|
-| `keketUmraFamilyRecordsStage25V1` | `/api/families` (surveyor/admin session required) |
+| `keketUmraFamilyRecordsStage25V1` | `/api/families` |
 | `keketUmraFamilySurveyDraftStage25V1` | Remains in `localStorage` as an unsaved draft only |
 | `keketUmraVillageSuggestionsStage25V1` | `/api/suggestions` |
 | `keketUmraSkilledWorkersStage25V1` | `/api/workers` |
 | `keketUmraWorkerRatingsStage25V1` | `/api/ratings` (averages are returned with `/api/workers`) |
-| Admin approval queue | `/api/admin/pending` and `/api/admin/queue/...` (admin session required) |
+| Approval queue | `/api/admin/pending` and `/api/admin/queue/...` |
 
 New family submissions are stored only in SQLite. Pre-existing family-record keys in
 browser `localStorage` are not used for active records or deleted by the integrated frontend.
-An admin-only "जुन्या ब्राउझर नोंदींचा JSON बॅकअप" action can export the old key without
-changing it; use the admin-only additive import to migrate that file.
-Family deletion, JSON export/import, and backup checks are admin-only. Surveyors may
-search, create, edit, print, and export CSV for family records.
+The "जुन्या ब्राउझर नोंदींचा JSON बॅकअप" action exports the old key without changing it.
+Family deletion, JSON export/import, backup checks, and approval actions are public.
 
 ## Security notes
 
-- Passwords hashed with scrypt; sessions are random tokens stored hashed in the database and revoked on logout or user deletion.
-- Login: 10 attempts / 15 min per IP, plus a 15-minute account lock after 5 wrong passwords. (A side effect: someone could deliberately lock a known username. Admins can't be locked out permanently, only for 15 minutes.)
+- **No authentication or authorization is enabled.** Anyone who can reach the server can read, alter, export, import, or delete family records and manage submissions.
+- On the first server start after this change, legacy account and session tables are deleted; old audit-log account names are cleared. Family survey records are preserved.
 - Public submissions: rate-limited per IP per hour (`SUBMIT_LIMIT_PER_HOUR`). Villages often share mobile-network IPs, so raise this if real users get blocked.
-- CSRF: SameSite=Strict cookie, `Origin` must match the host, and bodies must be `application/json`.
+- Unsafe API requests must have a matching `Origin` when the browser sends one, and bodies must be `application/json`.
 - All SQL is parameterised; field names in survey records are whitelisted by pattern; request bodies are size-limited (256 KB, 10 MB for import).
 - Security headers and a Content-Security-Policy are set. The CSP allows `'unsafe-inline'` scripts because `index.html` still has inline JavaScript. Moving it to `app.js` lets you remove that.
 - The server stores text as typed; the frontend must keep escaping it when rendering (your `esc()` function already does).
@@ -129,6 +116,5 @@ search, create, edit, print, and export CSV for family records.
 
 ## Not included (and not solved by code)
 
-- **Consent and privacy:** a legal consent form, privacy notice and data-retention rule are still needed before collecting real family data. The survey holds names, birth dates and phone numbers. Limit surveyor accounts to people you trust.
+- **Consent and privacy:** a legal consent form, privacy notice and data-retention rule are still needed. The survey holds names, birth dates and phone numbers, all of which are publicly accessible in this configuration. Do not collect real personal data unless that public exposure is intended and approved.
 - CSV export and printing still happen in the browser (they work from `GET /api/families`).
-- No password-reset flow: an admin creates a new account, or run `create-admin` again with a new username.

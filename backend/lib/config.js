@@ -11,8 +11,6 @@ export const config = {
   dbPath: env.DB_PATH || './data/kekatumra.db',
   production,
   trustProxy: env.TRUST_PROXY === 'true',
-  cookieSecure: env.COOKIE_SECURE ? env.COOKIE_SECURE === 'true' : production,
-  sessionHours: num(env.SESSION_HOURS, 12),
   submitLimitPerHour: num(env.SUBMIT_LIMIT_PER_HOUR, 20),
   publicDir: env.PUBLIC_DIR || './public',
 };
